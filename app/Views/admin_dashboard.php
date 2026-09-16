@@ -45,6 +45,12 @@
                         <h1 class="text-lg font-bold text-slate-800">ReviewBoost</h1>
                         <p class="text-xs text-slate-400 -mt-0.5">Admin Dashboard</p>
                     </div>
+                    <!-- Mobile Menu Button -->
+                    <button type="button" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="sm:hidden inline-flex items-center justify-center p-1.5 ml-2 rounded-md text-slate-400 hover:text-slate-500 hover:bg-slate-100 focus:outline-none transition-colors">
+                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
                 </div>
                 <!-- Desktop Buttons -->
                 <div class="hidden sm:flex items-center gap-4">
@@ -83,19 +89,11 @@
                     </a>
                 </div>
                 </div>
-                <!-- Mobile Menu Button -->
-                <div class="flex items-center sm:hidden">
-                    <button type="button" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-slate-500 hover:bg-slate-100 focus:outline-none transition-colors">
-                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                        </svg>
-                    </button>
-                </div>
             </div>
         </div>
         
         <!-- Mobile Menu Panel -->
-        <div id="mobile-menu" class="hidden sm:hidden border-t border-slate-200">
+        <div id="mobile-menu" class="hidden sm:hidden absolute top-16 left-0 w-full bg-white border-b border-slate-200 shadow-lg z-50">
             <div class="px-2 pt-2 pb-3 space-y-1">
                 <div class="px-3 py-2 text-sm text-slate-500 font-medium">
                     Masuk sebagai: <?= esc(session()->get('username')) ?>
