@@ -33,15 +33,14 @@ class ToolsController extends BaseController
         // Case B: The URL contains the hex structure (e.g. !1s0x...:0xCID)
         elseif (preg_match('/1s0x[0-9a-f]+:0x([0-9a-f]+)/i', $url, $matches)) {
             $hexCid = $matches[1];
-            // Convert hex to decimal for ludocid
-            // Using bcmath or gmp if available, but base_convert works for 64-bit PHP strings usually
-            $decCid = base_convert($hexCid, 16, 10);
+            // Convert hex to decimal for ludocid using bcmath to avoid precision loss
+            $decCid = $this->bchexdec($hexCid);
             $reviewLink = 'https://search.google.com/local/writereview?ludocid=' . $decCid;
         }
         // Case C: The URL contains ftid (Feature ID) e.g. ftid=0x...:0x...
         elseif (preg_match('/ftid=0x[0-9a-f]+:0x([0-9a-f]+)/i', $url, $matches)) {
             $hexCid = $matches[1];
-            $decCid = base_convert($hexCid, 16, 10);
+            $decCid = $this->bchexdec($hexCid);
             $reviewLink = 'https://search.google.com/local/writereview?ludocid=' . $decCid;
         }
 
@@ -75,5 +74,24 @@ class ToolsController extends BaseController
         curl_close($ch);
 
         return $finalUrl ?: $url;
+    }
+
+    /**
+     * Convert large hex string to decimal string without losing precision using BC Math
+     */
+    private function bchexdec($hex)
+    {
+        if (function_exists('bcadd')) {
+            $dec = '0';
+            $len = strlen($hex);
+            for ($i = 0; $i < $len; $i++) {
+                $current = strpos('0123456789abcdef', strtolower($hex[$i]));
+                $dec = bcadd(bcmul($dec, '16'), $current);
+            }
+            return $dec;
+        }
+        
+        // Fallback if bcmath is not installed (may lose precision on 32-bit systems or huge numbers)
+        return number_format(hexdec($hex), 0, '', '');
     }
 }
