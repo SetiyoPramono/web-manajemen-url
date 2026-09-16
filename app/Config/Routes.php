@@ -23,6 +23,7 @@ $routes->group('admin', ['filter' => 'auth:admin'], static function ($routes) {
     $routes->post('update/(:num)', 'AdminController::updateUrl/$1');
     $routes->get('view/(:num)', 'AdminController::viewUrl/$1');
     $routes->post('delete/(:num)', 'AdminController::deleteUrl/$1');
+    $routes->post('reset/(:num)', 'AdminController::resetUrl/$1');
     $routes->get('settings', 'AdminController::settings');
     $routes->post('settings/update', 'AdminController::updateSettings');
 

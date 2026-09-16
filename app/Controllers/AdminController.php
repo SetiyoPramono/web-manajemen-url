@@ -234,6 +234,45 @@ class AdminController extends BaseController
     }
 
     /**
+     * Reset data URL and User (unclaim)
+     */
+    public function resetUrl($id)
+    {
+        $urlModel = new UrlModel();
+        $url = $urlModel->find($id);
+
+        if (! $url) {
+            return redirect()->to('/admin')->with('error', 'URL tidak ditemukan.');
+        }
+
+        $userModel = new UserModel();
+        $user = $userModel->find($url['user_id']);
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        // Update the URL destination to empty string
+        $urlModel->update($id, ['destination_url' => '']);
+
+        // Update User to UNCLAIMED
+        $userModel->skipValidation(true)->update($user['id'], [
+            'username'      => $url['slug_url'],
+            'password_hash' => 'UNCLAIMED',
+            'nama'          => '',
+            'nomor_wa'      => '',
+            'alamat_maps'   => ''
+        ]);
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return redirect()->to('/admin')->with('error', 'Gagal mereset data.');
+        }
+
+        return redirect()->to('/admin')->with('success', 'Data klien berhasil direset.');
+    }
+
+    /**
      * Generate a random password
      */
     private function generateRandomPassword(int $length = 8): string
