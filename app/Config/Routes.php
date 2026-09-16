@@ -30,5 +30,8 @@ $routes->group('client', ['filter' => 'auth:client'], static function ($routes) 
     $routes->post('update', 'ClientController::updateUrl');
 });
 
+// Shared API Routes (Protected for all authenticated users)
+$routes->post('api/generate-review-link', 'ToolsController::generateReviewLink', ['filter' => 'auth']);
+
 // Slug Catch-All — MUST be LAST to avoid conflicting with above routes
 $routes->get('(:any)', 'RedirectController::index/$1');

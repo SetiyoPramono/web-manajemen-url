@@ -151,7 +151,15 @@
 
                             <!-- Card Body -->
                             <div class="px-6 pb-5">
-                                <label for="destination_url_<?= $url['id'] ?>" class="block text-sm font-medium text-slate-700 mb-2">URL Tujuan (Google Maps Review Link)</label>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label for="destination_url_<?= $url['id'] ?>" class="block text-sm font-medium text-slate-700">URL Tujuan (Google Maps Review Link)</label>
+                                    <button type="button" class="open-generator-btn text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-md transition-colors flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                        </svg>
+                                        Gunakan Generator
+                                    </button>
+                                </div>
                                 <div class="flex flex-col sm:flex-row gap-3">
                                     <input
                                         type="url"
@@ -198,6 +206,9 @@
     </script>
     <!-- Include Floating WA Button -->
     <?= view('partials/floating_wa') ?>
+
+    <!-- Include Generator Modal -->
+    <?= view('partials/generator_modal') ?>
 
 </body>
 </html>
