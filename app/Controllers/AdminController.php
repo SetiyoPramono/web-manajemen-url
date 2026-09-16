@@ -287,5 +287,188 @@ class AdminController extends BaseController
         $settingModel->setValue('cs_wa_enabled', $this->request->getPost('cs_wa_enabled') ? '1' : '0');
 
         return redirect()->to('/admin/settings')->with('success', 'Pengaturan berhasil diperbarui.');
+    /**
+     * Export all URLs and Clients to CSV
+     */
+    public function exportCsv()
+    {
+        $urlModel = new UrlModel();
+        
+        $urls = $urlModel->select('urls.slug_url, urls.destination_url, users.username, users.password_hash, users.nama, users.nomor_wa, users.alamat_maps')
+                         ->join('users', 'users.id = urls.user_id')
+                         ->orderBy('urls.created_at', 'DESC')
+                         ->findAll();
+
+        $filename = 'export_klien_' . date('Y-m-d_H-i-s') . '.csv';
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=' . $filename);
+
+        $output = fopen('php://output', 'w');
+
+        // Output BOM for Excel UTF-8 compatibility
+        fputs($output, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
+
+        // Write header
+        fputcsv($output, ['Slug URL', 'URL Tujuan', 'Username Login', 'Password', 'Nama Bisnis', 'Nomor WhatsApp', 'Alamat Maps (Asli)']);
+
+        // Write data
+        foreach ($urls as $url) {
+            $password = ($url['password_hash'] === 'UNCLAIMED') ? 'UNCLAIMED' : ''; // Do not export hashed passwords
+            fputcsv($output, [
+                $url['slug_url'],
+                $url['destination_url'],
+                $url['username'],
+                $password,
+                $url['nama'],
+                $url['nomor_wa'],
+                $url['alamat_maps']
+            ]);
+        }
+        fclose($output);
+        exit;
+    }
+
+    /**
+     * Import CSV to insert/update URLs and Clients
+     */
+    public function importCsv()
+    {
+        $validationRule = [
+            'csv_file' => [
+                'label' => 'File CSV',
+                'rules' => 'uploaded[csv_file]|ext_in[csv_file,csv]',
+            ],
+        ];
+
+        if (! $this->validate($validationRule)) {
+            return redirect()->back()->with('error', $this->validator->getError('csv_file'));
+        }
+
+        $file = $this->request->getFile('csv_file');
+
+        if ($file->isValid() && ! $file->hasMoved()) {
+            $filepath = $file->getTempName();
+            $handle = fopen($filepath, 'r');
+            
+            // Handle BOM
+            $bom = fread($handle, 3);
+            if ($bom != b"\xEF\xBB\xBF") {
+                rewind($handle);
+            }
+
+            $header = fgetcsv($handle, 1000, ',');
+            // Check if valid format
+            if (! $header || count($header) < 7 || stripos($header[0], 'Slug URL') === false) {
+                fclose($handle);
+                return redirect()->back()->with('error', 'Format CSV tidak sesuai. Gunakan template hasil Ekspor CSV.');
+            }
+
+            $userModel = new UserModel();
+            $urlModel = new UrlModel();
+            
+            $db = \Config\Database::connect();
+            $db->transStart();
+
+            $rowIdx = 2;
+            $successCount = 0;
+            $updateCount = 0;
+
+            while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+                // $data index: 0=>Slug, 1=>Destination, 2=>Username, 3=>Password, 4=>Nama, 5=>WA, 6=>Alamat Maps
+                $slug        = trim($data[0] ?? '');
+                $destination = trim($data[1] ?? '');
+                $username    = trim($data[2] ?? '');
+                $password    = trim($data[3] ?? '');
+                $nama        = trim($data[4] ?? '');
+                $nomorWa     = trim($data[5] ?? '');
+                $alamatMaps  = trim($data[6] ?? '');
+
+                if (empty($slug)) {
+                    $rowIdx++;
+                    continue;
+                }
+                
+                // If username is empty, fallback to slug
+                if (empty($username)) {
+                    $username = $slug;
+                }
+
+                // Convert password logic
+                $passwordHash = 'UNCLAIMED';
+                if ($password !== 'UNCLAIMED' && !empty($password)) {
+                    $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+                }
+
+                // If alamatMaps is filled, attempt to auto-convert to destination
+                if (!empty($alamatMaps) && empty($destination)) {
+                    $parsed = \App\Controllers\ToolsController::parseGoogleMapsUrl($alamatMaps);
+                    if ($parsed) {
+                        $destination = $parsed;
+                    } else {
+                        $destination = $alamatMaps;
+                    }
+                }
+
+                // Check if slug exists
+                $existingUrl = $urlModel->findBySlug($slug);
+                if ($existingUrl) {
+                    $existingUser = $userModel->find($existingUrl['user_id']);
+                    
+                    // Prepare user update data
+                    $userUpdate = [
+                        'username' => $username,
+                        'nama' => $nama,
+                        'nomor_wa' => $nomorWa,
+                        'alamat_maps' => $alamatMaps,
+                    ];
+                    
+                    // Only update password if a new one is provided in CSV
+                    if (!empty($password) && $password !== 'UNCLAIMED') {
+                        $userUpdate['password_hash'] = $passwordHash;
+                    }
+
+                    $userModel->skipValidation(true)->update($existingUser['id'], $userUpdate);
+                    $urlModel->skipValidation(true)->update($existingUrl['id'], [
+                        'destination_url' => $destination
+                    ]);
+                    $updateCount++;
+                } else {
+                    // Make sure username is unique, if not append random
+                    $existingUser = $userModel->where('username', $username)->first();
+                    if ($existingUser) {
+                        $username = $username . rand(10, 99);
+                    }
+
+                    $userId = $userModel->skipValidation(true)->insert([
+                        'username'      => $username,
+                        'password_hash' => $passwordHash,
+                        'role'          => 'client',
+                        'nama'          => $nama,
+                        'nomor_wa'      => $nomorWa,
+                        'alamat_maps'   => $alamatMaps
+                    ]);
+
+                    $urlModel->skipValidation(true)->insert([
+                        'slug_url'        => $slug,
+                        'destination_url' => $destination,
+                        'user_id'         => $userId
+                    ]);
+                    $successCount++;
+                }
+                $rowIdx++;
+            }
+            fclose($handle);
+            
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return redirect()->back()->with('error', 'Terjadi kesalahan sistem saat menyimpan data dari CSV.');
+            }
+
+            return redirect()->back()->with('success', "Proses impor berhasil. Ditambahkan: $successCount, Diperbarui: $updateCount.");
+        }
+
+        return redirect()->back()->with('error', 'Gagal membaca file CSV.');
     }
 }

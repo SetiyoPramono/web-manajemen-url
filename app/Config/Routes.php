@@ -25,6 +25,15 @@ $routes->group('admin', ['filter' => 'auth:admin'], static function ($routes) {
     $routes->post('delete/(:num)', 'AdminController::deleteUrl/$1');
     $routes->get('settings', 'AdminController::settings');
     $routes->post('settings/update', 'AdminController::updateSettings');
+
+    // Export/Import
+    $routes->get('export', 'AdminController::exportCsv');
+    $routes->post('import', 'AdminController::importCsv');
+
+    // User Management
+    $routes->get('users', 'AdminUsersController::index');
+    $routes->post('users/create', 'AdminUsersController::create');
+    $routes->post('users/delete/(:num)', 'AdminUsersController::delete/$1');
 });
 
 // Client Routes (Protected by AuthFilter with 'client' role)
