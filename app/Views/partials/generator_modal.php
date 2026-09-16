@@ -119,6 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const formData = new FormData();
             formData.append('url', url);
+            formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
 
             const res = await fetch('<?= base_url("api/generate-review-link") ?>', {
                 method: 'POST',
