@@ -16,34 +16,7 @@ class ToolsController extends BaseController
             return $this->response->setJSON(['status' => 'error', 'message' => 'URL tidak boleh kosong.', 'csrf' => csrf_hash()]);
         }
 
-        // 1. If it's a short URL, expand it.
-        if (preg_match('#^https?://(goo\.gl|maps\.app\.goo\.gl|g\.page)/#i', $url)) {
-            $url = $this->expandUrl($url);
-        }
-
-        // 2. Try to extract CID or Place ID
-        $reviewLink = null;
-
-        // Case A: The URL already contains ludocid or placeid
-        if (preg_match('/ludocid=([0-9]+)/i', $url, $matches)) {
-            $reviewLink = 'https://search.google.com/local/writereview?ludocid=' . $matches[1];
-        } elseif (preg_match('/placeid=([a-zA-Z0-9_-]+)/i', $url, $matches)) {
-            $reviewLink = 'https://search.google.com/local/writereview?placeid=' . $matches[1];
-        }
-        // Case B: The URL contains the hex structure (e.g. !1s0x...:0xCID)
-        elseif (preg_match('/1s0x([0-9a-f]+):0x([0-9a-f]+)/i', $url, $matches)) {
-            $hex1 = $matches[1];
-            $hex2 = $matches[2];
-            $placeId = $this->hexToPlaceId($hex1, $hex2);
-            $reviewLink = 'https://search.google.com/local/writereview?placeid=' . $placeId;
-        }
-        // Case C: The URL contains ftid (Feature ID) e.g. ftid=0x...:0x...
-        elseif (preg_match('/ftid=0x([0-9a-f]+):0x([0-9a-f]+)/i', $url, $matches)) {
-            $hex1 = $matches[1];
-            $hex2 = $matches[2];
-            $placeId = $this->hexToPlaceId($hex1, $hex2);
-            $reviewLink = 'https://search.google.com/local/writereview?placeid=' . $placeId;
-        }
+        $reviewLink = self::parseGoogleMapsUrl($url);
 
         if ($reviewLink) {
             return $this->response->setJSON([
@@ -61,9 +34,31 @@ class ToolsController extends BaseController
     }
 
     /**
+     * Parse any Google Maps URL and return a Review Link if possible, otherwise null
+     */
+    public static function parseGoogleMapsUrl($url)
+    {
+        if (preg_match('#^https?://(goo\.gl|maps\.app\.goo\.gl|g\.page)/#i', $url)) {
+            $url = self::expandUrl($url);
+        }
+
+        if (preg_match('/ludocid=([0-9]+)/i', $url, $matches)) {
+            return 'https://search.google.com/local/writereview?ludocid=' . $matches[1];
+        } elseif (preg_match('/placeid=([a-zA-Z0-9_-]+)/i', $url, $matches)) {
+            return 'https://search.google.com/local/writereview?placeid=' . $matches[1];
+        } elseif (preg_match('/1s0x([0-9a-f]+):0x([0-9a-f]+)/i', $url, $matches)) {
+            return 'https://search.google.com/local/writereview?placeid=' . self::hexToPlaceId($matches[1], $matches[2]);
+        } elseif (preg_match('/ftid=0x([0-9a-f]+):0x([0-9a-f]+)/i', $url, $matches)) {
+            return 'https://search.google.com/local/writereview?placeid=' . self::hexToPlaceId($matches[1], $matches[2]);
+        }
+        
+        return null;
+    }
+
+    /**
      * Follow redirects to get the final URL
      */
-    private function expandUrl($url)
+    public static function expandUrl($url)
     {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -82,7 +77,7 @@ class ToolsController extends BaseController
     /**
      * Convert Google Maps Feature ID hexes (1s... : 0x...) into a valid Google Place ID (ChIJ...)
      */
-    private function hexToPlaceId($hex1, $hex2)
+    public static function hexToPlaceId($hex1, $hex2)
     {
         // Ensure both are 16 chars (8 bytes) padded with 0 if necessary
         $hex1 = str_pad($hex1, 16, '0', STR_PAD_LEFT);

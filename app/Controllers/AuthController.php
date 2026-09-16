@@ -126,6 +126,12 @@ class AuthController extends BaseController
         $nomorWa = $this->request->getPost('nomor_wa');
         $alamatMaps = $this->request->getPost('alamat_maps');
 
+        // Automatically try to convert standard Maps URL to a Review Link
+        $generatedLink = \App\Controllers\ToolsController::parseGoogleMapsUrl($alamatMaps);
+        if ($generatedLink) {
+            $alamatMaps = $generatedLink;
+        }
+
         $db = \Config\Database::connect();
         $db->transStart();
 
