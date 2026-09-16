@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pengaturan — ReviewBoost</title>
+    <link rel="icon" type="image/png" href="<?= base_url('logo.png') ?>">
     <meta name="description" content="Pengaturan aplikasi ReviewBoost.">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -86,10 +87,8 @@
             <!-- Floating Button WhatsApp Settings -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 mb-6 animate-fade-in">
                 <div class="flex items-center gap-2 mb-5">
-                    <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                        </svg>
+                    <div class="flex items-center justify-center w-9 h-9">
+                        <img src="<?= base_url('logo.png') ?>" alt="Logo" class="w-full h-full object-contain">
                     </div>
                     <h2 class="text-lg font-semibold text-slate-800">Pengaturan Customer Support (WhatsApp)</h2>
                 </div>

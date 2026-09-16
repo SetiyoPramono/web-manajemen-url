@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manajemen Pengguna — ReviewBoost</title>
+    <link rel="icon" type="image/png" href="<?= base_url('logo.png') ?>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
@@ -31,10 +32,8 @@
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-3">
-                    <div class="flex items-center justify-center w-9 h-9 bg-indigo-500 rounded-xl">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
+                    <div class="flex items-center justify-center w-9 h-9">
+                        <img src="<?= base_url('logo.png') ?>" alt="Logo" class="w-full h-full object-contain">
                     </div>
                     <div>
                         <h1 class="text-lg font-bold text-slate-800">Manajemen Pengguna</h1>

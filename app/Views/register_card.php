@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aktivasi Kartu — ReviewBoost</title>
+    <link rel="icon" type="image/png" href="<?= base_url('logo.png') ?>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -39,10 +40,8 @@
     <div class="w-full max-w-lg relative z-10 animate-fade-in py-8">
         <!-- Logo / Brand -->
         <div class="text-center mb-8 animate-slide-up">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-500 rounded-2xl shadow-lg shadow-indigo-200 mb-4">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
+            <div class="inline-flex items-center justify-center w-24 h-24 mb-2">
+                <img src="<?= base_url('logo.png') ?>" alt="ReviewBoost Logo" class="w-full h-full object-contain relative z-10 drop-shadow-md">
             </div>
             <h1 class="text-2xl font-bold text-slate-800">Aktivasi Kartu Anda</h1>
             <p class="text-slate-500 mt-2 text-sm">Lengkapi data berikut untuk mengaktifkan kartu dan mengatur tujuan redirect Google Maps Anda.</p>

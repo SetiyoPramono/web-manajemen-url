@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard — ReviewBoost</title>
+    <link rel="icon" type="image/png" href="<?= base_url('logo.png') ?>">
     <meta name="description" content="Dashboard admin untuk mengelola klien.">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -37,10 +38,8 @@
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-3">
-                    <div class="flex items-center justify-center w-9 h-9 bg-indigo-500 rounded-xl">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
+                    <div class="flex items-center justify-center w-9 h-9">
+                        <img src="<?= base_url('logo.png') ?>" alt="Logo" class="w-full h-full object-contain">
                     </div>
                     <div>
                         <h1 class="text-lg font-bold text-slate-800">ReviewBoost</h1>
