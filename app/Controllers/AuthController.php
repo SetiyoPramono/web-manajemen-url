@@ -130,7 +130,7 @@ class AuthController extends BaseController
         $db->transStart();
 
         // Update User
-        $userModel->update($user['id'], [
+        $userModel->skipValidation(true)->update($user['id'], [
             'username'      => $username,
             'password_hash' => password_hash($password, PASSWORD_BCRYPT),
             'nama'          => $nama,
@@ -139,7 +139,7 @@ class AuthController extends BaseController
         ]);
 
         // Update URL destination
-        $urlModel->update($url['id'], [
+        $urlModel->skipValidation(true)->update($url['id'], [
             'destination_url' => $alamatMaps
         ]);
 
