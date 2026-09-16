@@ -1,69 +1,134 @@
-# CodeIgniter 4 Application Starter
+# ReviewBoost (Sistem Manajemen Kartu Pintar & URL)
 
-## What is CodeIgniter?
+ReviewBoost adalah sistem manajemen tautan (URL) cerdas berbasis **CodeIgniter 4**. Sistem ini dirancang khusus untuk bisnis kartu nama digital atau kartu ulasan pintar (NFC/QR). 
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+Dengan ReviewBoost, Anda dapat mencetak kartu NFC/QR kosong. Saat pelanggan memindai kartu tersebut untuk pertama kalinya, mereka dapat melakukan **Aktivasi Kartu (Klaim Kartu)** secara mandiri dan sistem akan secara ajaib mengubah URL Google Maps biasa mereka menjadi **Tautan Langsung Ulasan Bintang 5**.
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+---
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+## 🌟 Fitur Utama
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+1. **Aktivasi Kartu Mandiri (Self-Service)**: Admin hanya perlu membuat slug URL (misal: `domain.com/tokokopi`). Klien yang menerima kartu dapat memindainya dan mendaftarkan data mereka sendiri.
+2. **Auto-Generator Link Ulasan Google Maps**: Klien cukup menempelkan (*paste*) tautan Google Maps biasa mereka. Sistem akan secara otomatis mengekstrak *Place ID* dan mengubahnya menjadi tautan langsung untuk memberikan ulasan (Review Link).
+3. **Dashboard Admin**:
+   - Kelola ribuan klien dan URL dengan mudah.
+   - Fitur *Live Search* pintar untuk mencari nama klien atau URL.
+   - Indikator status (Telah Diklaim / Belum Diklaim).
+4. **Dashboard Klien**: Klien dapat masuk ke akun mereka untuk memperbarui URL tujuan atau meminta bantuan *Customer Support*.
+5. **Tombol Bantuan WhatsApp (Floating Button)**: Pengaturan nomor WA pusat bantuan yang dapat diatur langsung oleh Admin.
 
-## Installation & updates
+---
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+## 🛠️ Persyaratan Sistem (Requirements)
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+Sebelum melakukan instalasi, pastikan server/hosting Anda memiliki:
+- **PHP** versi 8.1 atau lebih baru.
+- **Ekstensi PHP**: `intl`, `mbstring`, `json`, `mysqlnd`, `curl`.
+- **Database**: MySQL versi 5.7+ atau MariaDB versi 10.2+.
+- **Composer** (untuk instalasi dependensi CodeIgniter 4).
 
-## Setup
+---
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+## 🚀 Panduan Instalasi (Untuk Pemula)
 
-## Important Change with index.php
+Ikuti langkah-langkah di bawah ini untuk menginstal ReviewBoost di server atau komputer lokal Anda secara perlahan.
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+### Langkah 1: Unduh Kode & Instal Dependensi
+1. Unduh (*Download*) atau *Clone* repositori ini ke komputer/server Anda.
+2. Buka terminal (atau Command Prompt / PowerShell) dan masuk ke dalam folder proyek ini.
+3. Jalankan perintah berikut untuk mengunduh semua sistem bawaan CodeIgniter:
+   ```bash
+   composer install
+   ```
+   *(Tunggu hingga proses instalasi selesai).*
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+### Langkah 2: Pengaturan Database
+1. Buka aplikasi database Anda (seperti **phpMyAdmin**).
+2. Buat database baru, misalnya dengan nama `reviewboost_db`.
+3. Buka folder proyek ini, cari file bernama `env`.
+4. Ubah nama file `env` menjadi `.env` (titik di depan).
+5. Buka file `.env` menggunakan teks editor (seperti Notepad), lalu cari dan ubah pengaturan berikut:
+   
+   **Mengaktifkan Mode Development (Saat masih uji coba)**:
+   ```env
+   CI_ENVIRONMENT = development
+   ```
+   *(Ubah menjadi `production` jika sudah online/dijual ke publik).*
 
-**Please** read the user guide for a better explanation of how CI4 works!
+   **Mengatur URL Website**:
+   ```env
+   app.baseURL = 'http://localhost:8080/'
+   ```
+   *(Ganti dengan nama domain Anda jika dihosting, contoh: `https://kartuku.com/`)*
 
-## Repository Management
+   **Menyambungkan Database**:
+   ```env
+   database.default.hostname = localhost
+   database.default.database = reviewboost_db
+   database.default.username = root
+   database.default.password = 
+   database.default.DBDriver = MySQLi
+   ```
+   *(Sesuaikan `username` dan `password` dengan pengaturan database hosting Anda).*
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+### Langkah 3: Membuat Tabel Database (Migrasi & Seeding)
+Setelah database tersambung, Anda tidak perlu mengimpor SQL secara manual. Cukup ketikkan dua perintah sakti ini di terminal Anda (pastikan Anda berada di folder proyek):
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+1. **Membuat tabel otomatis**:
+   ```bash
+   php spark migrate
+   ```
+2. **Membuat akun Admin pertama kali**:
+   ```bash
+   php spark db:seed AdminSeeder
+   ```
 
-## Server Requirements
+### Langkah 4: Selesai! Menjalankan Website
+Jika Anda menjalankan di komputer lokal, ketik perintah ini untuk menyalakan server:
+```bash
+php spark serve
+```
+Website Anda sudah bisa diakses di `http://localhost:8080/`.
 
-PHP version 8.2 or higher is required, with the following extensions installed:
+---
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+## 🔑 Akun Default Admin
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - The end of life date for PHP 8.1 was December 31, 2025.
-> - If you are still using below PHP 8.2, you should upgrade immediately.
-> - The end of life date for PHP 8.2 will be December 31, 2026.
+Setelah instalasi selesai (dan menjalankan `AdminSeeder`), Anda dapat masuk ke Dashboard Admin menggunakan data berikut:
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+- **Halaman Login**: `http://localhost:8080/login`
+- **Username**: `admin`
+- **Password**: `admin123`
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+*(Sangat disarankan untuk segera mengganti password admin setelah berhasil masuk).*
+
+---
+
+## 🌐 Cara Upload ke Web Hosting (CPanel / CyberPanel)
+
+Jika Anda ingin meng-online-kan website ini ke internet (Hosting asli), ikuti aturan penting CodeIgniter 4 berikut:
+
+1. **Jangan arahkan domain ke folder utama**. Arahkan *Document Root* dari domain Anda langsung menunjuk ke folder `public`.
+   - **Salah**: `/home/user/public_html/` (Jika file diletakkan di sini, sistem tidak aman).
+   - **Benar**: `/home/user/public_html/public/`
+2. Pastikan file `.env` sudah diatur menjadi `CI_ENVIRONMENT = production` agar pesan error sistem (jejak error) tidak terlihat oleh pengunjung biasa demi alasan keamanan.
+3. Pastikan ekstensi `mod_rewrite` aktif di server Apache agar URL bersih tanpa `index.php` dapat bekerja (sudah ada file `.htaccess` bawaan di dalam folder `public`).
+
+---
+
+## 💡 Alur Penggunaan Aplikasi (Cara Kerja)
+
+**Sebagai Admin:**
+1. Login ke Dashboard Admin.
+2. Buat URL baru, misal ketik slug: `kopisenja`.
+3. Cetak URL `domain.com/kopisenja` ke dalam stiker NFC atau QR Code, lalu serahkan ke pelanggan Anda.
+4. Di tabel Admin, statusnya akan terlihat **Belum Diklaim**.
+
+**Sebagai Pelanggan / Klien (Pemilik Kartu):**
+1. Saat Klien memindai kartu (NFC/QR) untuk pertama kalinya, mereka akan otomatis diarahkan ke halaman **Aktivasi Kartu**.
+2. Klien mengisi Username Login, Password, Nama Bisnis, No WA, dan **Tautan Google Maps** mereka yang biasa.
+3. Setelah klik Simpan, Klien akan langsung memiliki akun, dan sistem *secara ajaib* telah mengubah tautan Google Maps tersebut menjadi Tautan Ulasan (Review Link) resmi.
+4. Mulai saat ini, siapa pun yang menempelkan kartu (NFC) tersebut, akan langsung diarahkan ke Halaman Ulasan Google Maps Klien!
+
+---
+*Dikembangkan secara khusus dan eksklusif. Hak Cipta dilindungi.*
