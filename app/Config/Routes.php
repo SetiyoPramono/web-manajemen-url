@@ -12,6 +12,9 @@ $routes->get('login', 'AuthController::login');
 $routes->post('login', 'AuthController::attemptLogin');
 $routes->get('logout', 'AuthController::logout');
 
+$routes->get('register-card/(:segment)', 'AuthController::registerCard/$1');
+$routes->post('register-card/(:segment)', 'AuthController::processRegisterCard/$1');
+
 // Admin Routes (Protected by AuthFilter with 'admin' role)
 $routes->group('admin', ['filter' => 'auth:admin'], static function ($routes) {
     $routes->get('/', 'AdminController::index');

@@ -17,7 +17,7 @@ class AdminController extends BaseController
 
         // Get all URLs with their associated client usernames
         $urls = $urlModel
-            ->select('urls.*, users.username as client_username')
+            ->select('urls.*, users.username as client_username, users.password_hash')
             ->join('users', 'users.id = urls.user_id', 'left')
             ->orderBy('urls.created_at', 'DESC')
             ->findAll();
@@ -49,22 +49,17 @@ class AdminController extends BaseController
 
         $slugUrl = $this->request->getPost('slug_url');
 
-        // Generate client credentials
-        $clientUsername = 'client_' . strtolower($slugUrl);
-        $plainPassword  = $this->generateRandomPassword(8);
-        $hashedPassword = password_hash($plainPassword, PASSWORD_BCRYPT);
-
-        // Check if username already exists, append number if so
-        $userModel = new UserModel();
-        $existingUser = $userModel->where('username', $clientUsername)->first();
-        if ($existingUser) {
-            $clientUsername = $clientUsername . '_' . random_int(100, 999);
-        }
+        // Generate unclaimed client credentials
+        // Use slug_url as the temporary username (guaranteed unique by urls.slug_url constraint)
+        $clientUsername = $slugUrl;
+        $hashedPassword = 'UNCLAIMED';
 
         $db = \Config\Database::connect();
         $db->transStart();
 
-        // Create the client user
+        $userModel = new UserModel();
+
+        // Create the unclaimed client user
         $userModel->skipValidation(true)->insert([
             'username'      => $clientUsername,
             'password_hash' => $hashedPassword,
@@ -84,13 +79,10 @@ class AdminController extends BaseController
         $db->transComplete();
 
         if ($db->transStatus() === false) {
-            return redirect()->back()->with('error', 'Gagal membuat URL. Silakan coba lagi.');
+            return redirect()->to('/admin')->with('error', 'Gagal membuat URL baru.');
         }
 
-        // Flash the generated credentials (shown only once)
-        return redirect()->to('/admin')->with('success',
-            "URL /{$slugUrl} berhasil dibuat! Kredensial klien — Username: <strong>{$clientUsername}</strong> | Password: <strong>{$plainPassword}</strong> (simpan sekarang, tidak akan ditampilkan lagi)"
-        );
+        return redirect()->to('/admin')->with('success', "Berhasil! URL /{$slugUrl} telah dibuat dan siap diklaim oleh klien.");
     }
 
     /**

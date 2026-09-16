@@ -27,12 +27,20 @@ class RedirectController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        // Slug found but destination_url is empty → redirect to login with warning
+        // Check user status
+        $userModel = new \App\Models\UserModel();
+        $user = $userModel->find($url['user_id']);
+
+        if ($user && $user['password_hash'] === 'UNCLAIMED') {
+            return redirect()->to('/register-card/' . $slug);
+        }
+
+        // Slug found but destination_url is empty -> redirect to login with warning
         if (empty($url['destination_url'])) {
             return redirect()->to('/login')->with('warning', 'URL tujuan belum diatur. Silakan login untuk mengatur URL tujuan.');
         }
 
-        // Slug found and destination_url exists → redirect
+        // Slug found and destination_url exists -> redirect
         return redirect()->to($url['destination_url']);
     }
 }

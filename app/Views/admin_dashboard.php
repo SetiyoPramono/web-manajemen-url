@@ -231,8 +231,14 @@
                                     <?php endif; ?>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-slate-400">Klien</span>
-                                    <span class="text-slate-600 font-medium"><?= esc($url['client_username'] ?? '-') ?></span>
+                                    <span class="text-slate-400">Status Klien</span>
+                                    <?php if (isset($url['password_hash']) && $url['password_hash'] === 'UNCLAIMED'): ?>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                            Belum Diklaim
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-slate-600 font-medium"><?= esc($url['client_username'] ?? '-') ?></span>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-slate-400">Dibuat</span>
@@ -281,14 +287,23 @@
                                         <?php endif; ?>
                                     </td>
                                     <td class="px-6 py-4">
-                                        <span class="inline-flex items-center gap-1.5 text-sm text-slate-600">
-                                            <div class="w-5 h-5 bg-slate-100 rounded-full flex items-center justify-center">
-                                                <svg class="w-3 h-3 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                                        <?php if (isset($url['password_hash']) && $url['password_hash'] === 'UNCLAIMED'): ?>
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
                                                 </svg>
-                                            </div>
-                                            <?= esc($url['client_username'] ?? '-') ?>
-                                        </span>
+                                                Belum Diklaim
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="inline-flex items-center gap-1.5 text-sm text-slate-600">
+                                                <div class="w-5 h-5 bg-slate-100 rounded-full flex items-center justify-center">
+                                                    <svg class="w-3 h-3 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <?= esc($url['client_username'] ?? '-') ?>
+                                            </span>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="px-6 py-4 text-sm text-slate-500">
                                         <?= date('d M Y', strtotime($url['created_at'])) ?>

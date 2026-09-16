@@ -67,4 +67,96 @@ class AuthController extends BaseController
         session()->destroy();
         return redirect()->to('/login')->with('success', 'Anda berhasil logout.');
     }
+
+    /**
+     * Show card registration form
+     */
+    public function registerCard($slug)
+    {
+        $urlModel = new \App\Models\UrlModel();
+        $userModel = new UserModel();
+
+        $url = $urlModel->where('slug_url', $slug)->first();
+        if (!$url) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $user = $userModel->find($url['user_id']);
+        if (!$user || $user['password_hash'] !== 'UNCLAIMED') {
+            // Already claimed, redirect to the URL normally
+            return redirect()->to('/' . $slug);
+        }
+
+        return view('register_card', ['slug' => $slug]);
+    }
+
+    /**
+     * Process card registration
+     */
+    public function processRegisterCard($slug)
+    {
+        $urlModel = new \App\Models\UrlModel();
+        $userModel = new UserModel();
+
+        $url = $urlModel->where('slug_url', $slug)->first();
+        if (!$url) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $user = $userModel->find($url['user_id']);
+        if (!$user || $user['password_hash'] !== 'UNCLAIMED') {
+            return redirect()->to('/' . $slug);
+        }
+
+        $rules = [
+            'username' => 'required|min_length[3]|max_length[100]|is_unique[users.username,id,' . $user['id'] . ']',
+            'password' => 'required|min_length[6]',
+            'nama'     => 'required|max_length[100]',
+            'nomor_wa' => 'required|max_length[20]',
+            'alamat_maps' => 'required|valid_url_strict'
+        ];
+
+        if (! $this->validate($rules)) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        $username = $this->request->getPost('username');
+        $password = $this->request->getPost('password');
+        $nama = $this->request->getPost('nama');
+        $nomorWa = $this->request->getPost('nomor_wa');
+        $alamatMaps = $this->request->getPost('alamat_maps');
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        // Update User
+        $userModel->update($user['id'], [
+            'username'      => $username,
+            'password_hash' => password_hash($password, PASSWORD_BCRYPT),
+            'nama'          => $nama,
+            'nomor_wa'      => $nomorWa,
+            'alamat_maps'   => $alamatMaps
+        ]);
+
+        // Update URL destination
+        $urlModel->update($url['id'], [
+            'destination_url' => $alamatMaps
+        ]);
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan sistem saat menyimpan data.');
+        }
+
+        // Auto-login
+        session()->set([
+            'user_id'    => $user['id'],
+            'username'   => $username,
+            'role'       => 'client',
+            'isLoggedIn' => true,
+        ]);
+
+        return redirect()->to('/client')->with('success', 'Selamat! Kartu Anda telah aktif dan siap digunakan.');
+    }
 }
