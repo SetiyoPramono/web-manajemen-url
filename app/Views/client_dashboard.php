@@ -45,7 +45,8 @@
                         <p class="text-xs text-slate-400 -mt-0.5">Client Dashboard</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-4">
+                <!-- Desktop Buttons -->
+                <div class="hidden sm:flex items-center gap-4">
                     <div class="hidden sm:flex items-center gap-2 text-sm text-slate-500">
                         <div class="w-7 h-7 bg-indigo-100 rounded-full flex items-center justify-center">
                             <svg class="w-4 h-4 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
@@ -61,6 +62,29 @@
                         <span class="hidden sm:inline">Logout</span>
                     </a>
                 </div>
+                <!-- Mobile Menu Button -->
+                <div class="flex items-center sm:hidden">
+                    <button type="button" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-slate-500 hover:bg-slate-100 focus:outline-none transition-colors">
+                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu Panel -->
+        <div id="mobile-menu" class="hidden sm:hidden border-t border-slate-200">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <div class="px-3 py-2 text-sm text-slate-500 font-medium">
+                    Masuk sebagai: <?= esc(session()->get('username')) ?>
+                </div>
+                <a href="<?= base_url('logout') ?>" class="flex items-center gap-2 px-3 py-2 text-base font-medium text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors border-t border-slate-100 pt-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Logout
+                </a>
             </div>
         </div>
     </nav>
