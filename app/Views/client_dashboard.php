@@ -151,13 +151,14 @@
 
                             <!-- Card Body -->
                             <div class="px-6 pb-5">
-                                <label class="block text-xs font-medium text-slate-500 mb-2">URL Tujuan Redirect</label>
+                                <label for="destination_url_<?= $url['id'] ?>" class="block text-sm font-medium text-slate-700 mb-2">URL Tujuan (Google Maps Review Link)</label>
                                 <div class="flex flex-col sm:flex-row gap-3">
                                     <input
                                         type="url"
                                         name="destination_url"
+                                        id="destination_url_<?= $url['id'] ?>"
                                         value="<?= esc($url['destination_url'] ?? '') ?>"
-                                        placeholder="https://contoh.com/halaman-tujuan"
+                                        placeholder="https://g.page/r/.../review"
                                         class="input-focus flex-1 px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:bg-white transition-all duration-200"
                                     >
                                     <button
@@ -168,10 +169,13 @@
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                             </svg>
-                                            Simpan
+                                            Simpan Perubahan
                                         </span>
                                     </button>
                                 </div>
+                                <p class="text-xs text-slate-500 mt-3">
+                                    <strong class="text-indigo-500">💡 Tips:</strong> Untuk langsung memunculkan pop-up rating bintang 5, gunakan link <b>"Minta Ulasan" (Ask for reviews)</b> dari dashboard Google Profil Bisnis Anda.
+                                </p>
                                 <p class="text-xs text-slate-400 mt-2 ml-1">Masukkan URL lengkap beserta https:// — Kosongkan jika ingin menonaktifkan redirect.</p>
                             </div>
                         </form>
