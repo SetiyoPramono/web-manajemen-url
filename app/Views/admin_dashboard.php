@@ -45,15 +45,12 @@
                         <h1 class="text-lg font-bold text-slate-800">ReviewBoost</h1>
                         <p class="text-xs text-slate-400 -mt-0.5">Admin Dashboard</p>
                     </div>
-                    <!-- Mobile Menu Button -->
-                    <button type="button" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="sm:hidden inline-flex items-center justify-center p-1.5 ml-2 rounded-md text-slate-400 hover:text-slate-500 hover:bg-slate-100 focus:outline-none transition-colors">
-                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                        </svg>
-                    </button>
                 </div>
-                <!-- Desktop Buttons -->
-                <div class="hidden sm:flex items-center gap-4">
+                
+                <!-- Right Side Actions -->
+                <div class="flex items-center">
+                    <!-- Desktop Buttons -->
+                    <div class="hidden sm:flex items-center gap-4">
                     <div class="hidden sm:flex items-center gap-2 text-sm text-slate-500">
                         <div class="w-7 h-7 bg-indigo-100 rounded-full flex items-center justify-center">
                             <svg class="w-4 h-4 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
@@ -87,7 +84,14 @@
                         </svg>
                         <span class="hidden sm:inline">Logout</span>
                     </a>
-                </div>
+                    </div>
+                    
+                    <!-- Mobile Menu Button -->
+                    <button type="button" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="sm:hidden inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-slate-500 hover:bg-slate-100 focus:outline-none transition-colors">
+                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
