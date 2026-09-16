@@ -157,18 +157,28 @@
 
         <!-- URL List -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 animate-fade-in" style="animation-delay: 0.1s;">
-            <div class="flex items-center justify-between p-6 pb-4">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                         </svg>
                     </div>
-                    <h2 class="text-lg font-semibold text-slate-800">Daftar URL</h2>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Daftar Klien & URL</h2>
+                        <p class="text-xs text-slate-500 mt-0.5" id="url-count-text">Menampilkan <?= count($urls) ?> data</p>
+                    </div>
                 </div>
-                <span class="text-xs font-medium text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full">
-                    <?= count($urls) ?> URL
-                </span>
+                
+                <!-- Search Input -->
+                <div class="relative w-full sm:w-72">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input type="text" id="search-input" placeholder="Cari klien, slug, atau URL..." class="input-focus block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-400 transition-all">
+                </div>
             </div>
 
             <?php if (empty($urls)): ?>
@@ -182,9 +192,9 @@
                 </div>
             <?php else: ?>
                 <!-- Mobile Cards (visible on small screens) -->
-                <div class="block sm:hidden px-4 pb-4 space-y-3">
+                <div class="block sm:hidden p-4 space-y-3 bg-slate-50/50" id="mobile-card-container">
                     <?php foreach ($urls as $url): ?>
-                        <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                        <div class="url-item bg-white rounded-xl p-4 border border-slate-200 shadow-sm" data-search="<?= esc(strtolower($url['slug_url'] . ' ' . $url['destination_url'] . ' ' . $url['client_username'])) ?>">
                             <div class="flex items-center justify-between mb-3">
                                 <a href="<?= base_url($url['slug_url']) ?>" target="_blank" class="text-indigo-500 font-semibold text-sm hover:text-indigo-600 transition-colors">
                                     /<?= esc($url['slug_url']) ?>
@@ -245,9 +255,9 @@
                                 <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100">
+                        <tbody class="divide-y divide-slate-100" id="desktop-table-body">
                             <?php foreach ($urls as $url): ?>
-                                <tr class="table-row-hover transition-colors">
+                                <tr class="url-item table-row-hover transition-colors" data-search="<?= esc(strtolower($url['slug_url'] . ' ' . $url['destination_url'] . ' ' . $url['client_username'])) ?>">
                                     <td class="px-6 py-4">
                                         <a href="<?= base_url($url['slug_url']) ?>" target="_blank" class="inline-flex items-center gap-1 text-indigo-500 font-semibold text-sm hover:text-indigo-600 transition-colors">
                                             /<?= esc($url['slug_url']) ?>
@@ -333,6 +343,36 @@
         document.getElementById('slug_url').addEventListener('input', function(e) {
             e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9_\-]/g, '');
         });
+
+        // Live Search Filtering
+        const searchInput = document.getElementById('search-input');
+        const countText = document.getElementById('url-count-text');
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', function(e) {
+                const term = e.target.value.toLowerCase();
+                const items = document.querySelectorAll('.url-item');
+                let visibleCount = 0;
+                
+                items.forEach(item => {
+                    const searchData = item.getAttribute('data-search');
+                    if (searchData.includes(term)) {
+                        item.style.display = '';
+                        visibleCount++;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                // Since items are duplicated (desktop vs mobile views), visibleCount will be 2x the actual count
+                // Let's count only desktop rows or mobile cards based on screen size, or just divide by 2
+                const actualCount = visibleCount / 2;
+                
+                if (countText) {
+                    countText.textContent = `Menampilkan ${actualCount} data`;
+                }
+            });
+        }
     </script>
     <!-- Include Generator Modal -->
     <?= view('partials/generator_modal') ?>
