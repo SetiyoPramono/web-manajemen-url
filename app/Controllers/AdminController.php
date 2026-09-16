@@ -287,6 +287,8 @@ class AdminController extends BaseController
         $settingModel->setValue('cs_wa_enabled', $this->request->getPost('cs_wa_enabled') ? '1' : '0');
 
         return redirect()->to('/admin/settings')->with('success', 'Pengaturan berhasil diperbarui.');
+    }
+
     /**
      * Export all URLs and Clients to CSV
      */
