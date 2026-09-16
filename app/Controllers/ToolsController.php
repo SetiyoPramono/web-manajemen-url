@@ -31,17 +31,18 @@ class ToolsController extends BaseController
             $reviewLink = 'https://search.google.com/local/writereview?placeid=' . $matches[1];
         }
         // Case B: The URL contains the hex structure (e.g. !1s0x...:0xCID)
-        elseif (preg_match('/1s0x[0-9a-f]+:0x([0-9a-f]+)/i', $url, $matches)) {
-            $hexCid = $matches[1];
-            // Convert hex to decimal for ludocid using bcmath to avoid precision loss
-            $decCid = $this->bchexdec($hexCid);
-            $reviewLink = 'https://search.google.com/local/writereview?ludocid=' . $decCid;
+        elseif (preg_match('/1s0x([0-9a-f]+):0x([0-9a-f]+)/i', $url, $matches)) {
+            $hex1 = $matches[1];
+            $hex2 = $matches[2];
+            $placeId = $this->hexToPlaceId($hex1, $hex2);
+            $reviewLink = 'https://search.google.com/local/writereview?placeid=' . $placeId;
         }
         // Case C: The URL contains ftid (Feature ID) e.g. ftid=0x...:0x...
-        elseif (preg_match('/ftid=0x[0-9a-f]+:0x([0-9a-f]+)/i', $url, $matches)) {
-            $hexCid = $matches[1];
-            $decCid = $this->bchexdec($hexCid);
-            $reviewLink = 'https://search.google.com/local/writereview?ludocid=' . $decCid;
+        elseif (preg_match('/ftid=0x([0-9a-f]+):0x([0-9a-f]+)/i', $url, $matches)) {
+            $hex1 = $matches[1];
+            $hex2 = $matches[2];
+            $placeId = $this->hexToPlaceId($hex1, $hex2);
+            $reviewLink = 'https://search.google.com/local/writereview?placeid=' . $placeId;
         }
 
         if ($reviewLink) {
@@ -77,21 +78,33 @@ class ToolsController extends BaseController
     }
 
     /**
-     * Convert large hex string to decimal string without losing precision using BC Math
+     * Convert Google Maps Feature ID hexes (1s... : 0x...) into a valid Google Place ID (ChIJ...)
      */
-    private function bchexdec($hex)
+    private function hexToPlaceId($hex1, $hex2)
     {
-        if (function_exists('bcadd')) {
-            $dec = '0';
-            $len = strlen($hex);
-            for ($i = 0; $i < $len; $i++) {
-                $current = strpos('0123456789abcdef', strtolower($hex[$i]));
-                $dec = bcadd(bcmul($dec, '16'), $current);
-            }
-            return $dec;
-        }
+        // Ensure both are 16 chars (8 bytes) padded with 0 if necessary
+        $hex1 = str_pad($hex1, 16, '0', STR_PAD_LEFT);
+        $hex2 = str_pad($hex2, 16, '0', STR_PAD_LEFT);
+
+        // Convert hex to binary strings
+        $b1 = hex2bin($hex1);
+        $b2 = hex2bin($hex2);
+
+        // Reverse bytes for little-endian encoding
+        $b1 = strrev($b1);
+        $b2 = strrev($b2);
+
+        // Construct the protobuf message
+        // 0x0a = tag 1, type string (length 18 bytes = 0x12)
+        // 0x09 = tag 1, type 64-bit fixed
+        // 0x11 = tag 2, type 64-bit fixed
+        $msg = "\x0a\x12\x09" . $b1 . "\x11" . $b2;
+
+        // Base64 encode and make it URL safe
+        $base64 = base64_encode($msg);
+        $urlSafe = str_replace(['+', '/'], ['-', '_'], $base64);
         
-        // Fallback if bcmath is not installed (may lose precision on 32-bit systems or huge numbers)
-        return number_format(hexdec($hex), 0, '', '');
+        // Remove padding '='
+        return rtrim($urlSafe, '=');
     }
 }
