@@ -105,6 +105,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target === backdrop) closeModal();
     });
 
+    // Initialize CSRF hash from the server
+    window.currentCsrfHash = '<?= csrf_hash() ?>';
+
+    function updateCsrfToken(newHash) {
+        if (!newHash) return;
+        window.currentCsrfHash = newHash;
+        // Update all CSRF hidden inputs on the page
+        document.querySelectorAll('input[name="<?= csrf_token() ?>"]').forEach(input => {
+            input.value = newHash;
+        });
+    }
+
     generateBtn.addEventListener('click', async () => {
         const url = input.value.trim();
         if (!url) return;
@@ -119,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const formData = new FormData();
             formData.append('url', url);
-            formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+            formData.append('<?= csrf_token() ?>', window.currentCsrfHash);
 
             const res = await fetch('<?= base_url("api/generate-review-link") ?>', {
                 method: 'POST',
@@ -127,6 +139,11 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             const data = await res.json();
+            
+            // Update CSRF token for subsequent requests globally on the page
+            if (data.csrf) {
+                updateCsrfToken(data.csrf);
+            }
             
             if (data.status === 'success') {
                 output.value = data.review_link;

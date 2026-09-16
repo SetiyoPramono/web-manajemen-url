@@ -13,7 +13,7 @@ class ToolsController extends BaseController
         $url = $this->request->getPost('url') ?? $this->request->getGet('url');
 
         if (empty($url)) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'URL tidak boleh kosong.']);
+            return $this->response->setJSON(['status' => 'error', 'message' => 'URL tidak boleh kosong.', 'csrf' => csrf_hash()]);
         }
 
         // 1. If it's a short URL, expand it.
@@ -48,13 +48,15 @@ class ToolsController extends BaseController
         if ($reviewLink) {
             return $this->response->setJSON([
                 'status' => 'success',
-                'review_link' => $reviewLink
+                'review_link' => $reviewLink,
+                'csrf' => csrf_hash()
             ]);
         }
 
         return $this->response->setJSON([
             'status' => 'error',
-            'message' => 'Gagal mendeteksi ID Tempat dari URL. Pastikan Anda menyalin URL lengkap dari Google Maps.'
+            'message' => 'Gagal mendeteksi ID Tempat dari URL. Pastikan Anda menyalin URL lengkap dari Google Maps.',
+            'csrf' => csrf_hash()
         ]);
     }
 
