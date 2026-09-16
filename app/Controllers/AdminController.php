@@ -4,6 +4,9 @@ namespace App\Controllers;
 
 use App\Models\UserModel;
 use App\Models\UrlModel;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class AdminController extends BaseController
 {
@@ -290,7 +293,7 @@ class AdminController extends BaseController
     }
 
     /**
-     * Export all URLs and Clients to CSV
+     * Export all URLs and Clients to Excel
      */
     public function exportCsv()
     {
@@ -301,45 +304,51 @@ class AdminController extends BaseController
                          ->orderBy('urls.created_at', 'DESC')
                          ->findAll();
 
-        $filename = 'export_klien_' . date('Y-m-d_H-i-s') . '.csv';
-
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename=' . $filename);
-
-        $output = fopen('php://output', 'w');
-
-        // Output BOM for Excel UTF-8 compatibility
-        fputs($output, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
         // Write header
-        fputcsv($output, ['Slug URL', 'URL Tujuan', 'Username Login', 'Password', 'Nama Bisnis', 'Nomor WhatsApp', 'Alamat Maps (Asli)']);
+        $headers = ['Slug URL', 'URL Tujuan', 'Username Login', 'Password', 'Nama Bisnis', 'Nomor WhatsApp', 'Alamat Maps (Asli)'];
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . '1', $header);
+            $col++;
+        }
 
         // Write data
+        $row = 2;
         foreach ($urls as $url) {
             $password = ($url['password_hash'] === 'UNCLAIMED') ? 'UNCLAIMED' : ''; // Do not export hashed passwords
-            fputcsv($output, [
-                $url['slug_url'],
-                $url['destination_url'],
-                $url['username'],
-                $password,
-                $url['nama'],
-                $url['nomor_wa'],
-                $url['alamat_maps']
-            ]);
+            $sheet->setCellValue('A' . $row, $url['slug_url']);
+            $sheet->setCellValue('B' . $row, $url['destination_url']);
+            $sheet->setCellValue('C' . $row, $url['username']);
+            $sheet->setCellValue('D' . $row, $password);
+            $sheet->setCellValue('E' . $row, $url['nama']);
+            $sheet->setCellValueExplicit('F' . $row, (string)$url['nomor_wa'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('G' . $row, $url['alamat_maps']);
+            $row++;
         }
-        fclose($output);
+
+        $filename = 'export_klien_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
         exit;
     }
 
     /**
-     * Import CSV to insert/update URLs and Clients
+     * Import Excel to insert/update URLs and Clients
      */
     public function importCsv()
     {
         $validationRule = [
             'csv_file' => [
-                'label' => 'File CSV',
-                'rules' => 'uploaded[csv_file]|ext_in[csv_file,csv]',
+                'label' => 'File Excel',
+                'rules' => 'uploaded[csv_file]|ext_in[csv_file,xlsx,xls]',
             ],
         ];
 
@@ -351,19 +360,18 @@ class AdminController extends BaseController
 
         if ($file->isValid() && ! $file->hasMoved()) {
             $filepath = $file->getTempName();
-            $handle = fopen($filepath, 'r');
             
-            // Handle BOM
-            $bom = fread($handle, 3);
-            if ($bom != b"\xEF\xBB\xBF") {
-                rewind($handle);
+            try {
+                $spreadsheet = IOFactory::load($filepath);
+                $sheet = $spreadsheet->getActiveSheet();
+                $rows = $sheet->toArray();
+            } catch (\Exception $e) {
+                return redirect()->back()->with('error', 'Gagal membaca file Excel.');
             }
 
-            $header = fgetcsv($handle, 1000, ',');
             // Check if valid format
-            if (! $header || count($header) < 7 || stripos($header[0], 'Slug URL') === false) {
-                fclose($handle);
-                return redirect()->back()->with('error', 'Format CSV tidak sesuai. Gunakan template hasil Ekspor CSV.');
+            if (count($rows) < 1 || !isset($rows[0][0]) || stripos($rows[0][0], 'Slug URL') === false) {
+                return redirect()->back()->with('error', 'Format Excel tidak sesuai. Gunakan template hasil Ekspor Excel.');
             }
 
             $userModel = new UserModel();
@@ -372,22 +380,22 @@ class AdminController extends BaseController
             $db = \Config\Database::connect();
             $db->transStart();
 
-            $rowIdx = 2;
             $successCount = 0;
             $updateCount = 0;
 
-            while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+            // Skip header (index 0)
+            for ($i = 1; $i < count($rows); $i++) {
+                $data = $rows[$i];
                 // $data index: 0=>Slug, 1=>Destination, 2=>Username, 3=>Password, 4=>Nama, 5=>WA, 6=>Alamat Maps
-                $slug        = trim($data[0] ?? '');
-                $destination = trim($data[1] ?? '');
-                $username    = trim($data[2] ?? '');
-                $password    = trim($data[3] ?? '');
-                $nama        = trim($data[4] ?? '');
-                $nomorWa     = trim($data[5] ?? '');
-                $alamatMaps  = trim($data[6] ?? '');
+                $slug        = trim((string)($data[0] ?? ''));
+                $destination = trim((string)($data[1] ?? ''));
+                $username    = trim((string)($data[2] ?? ''));
+                $password    = trim((string)($data[3] ?? ''));
+                $nama        = trim((string)($data[4] ?? ''));
+                $nomorWa     = trim((string)($data[5] ?? ''));
+                $alamatMaps  = trim((string)($data[6] ?? ''));
 
                 if (empty($slug)) {
-                    $rowIdx++;
                     continue;
                 }
                 
@@ -425,7 +433,7 @@ class AdminController extends BaseController
                         'alamat_maps' => $alamatMaps,
                     ];
                     
-                    // Only update password if a new one is provided in CSV
+                    // Only update password if a new one is provided in Excel
                     if (!empty($password) && $password !== 'UNCLAIMED') {
                         $userUpdate['password_hash'] = $passwordHash;
                     }
@@ -458,19 +466,17 @@ class AdminController extends BaseController
                     ]);
                     $successCount++;
                 }
-                $rowIdx++;
             }
-            fclose($handle);
             
             $db->transComplete();
 
             if ($db->transStatus() === false) {
-                return redirect()->back()->with('error', 'Terjadi kesalahan sistem saat menyimpan data dari CSV.');
+                return redirect()->back()->with('error', 'Terjadi kesalahan sistem saat menyimpan data dari Excel.');
             }
 
             return redirect()->back()->with('success', "Proses impor berhasil. Ditambahkan: $successCount, Diperbarui: $updateCount.");
         }
 
-        return redirect()->back()->with('error', 'Gagal membaca file CSV.');
+        return redirect()->back()->with('error', 'Gagal membaca file Excel.');
     }
 }

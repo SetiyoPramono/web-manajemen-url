@@ -166,13 +166,13 @@
                     <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    Ekspor CSV
+                    Ekspor Excel
                 </a>
                 <button type="button" onclick="document.getElementById('import-modal').classList.remove('hidden')" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
                     <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
-                    Impor CSV
+                    Impor Excel
                 </button>
             </div>
         </div>
@@ -412,7 +412,7 @@
         }
     </script>
     
-    <!-- Import CSV Modal -->
+    <!-- Import Excel Modal -->
     <div id="import-modal" class="hidden fixed inset-0 z-[60] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
             <!-- Background overlay -->
@@ -420,7 +420,7 @@
 
             <div class="relative inline-block w-full max-w-md p-6 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-2xl animate-slide-up sm:my-8">
                 <div class="flex items-start justify-between mb-5">
-                    <h3 class="text-lg font-bold text-slate-800" id="modal-title">Impor Data CSV</h3>
+                    <h3 class="text-lg font-bold text-slate-800" id="modal-title">Impor Data Excel</h3>
                     <button type="button" onclick="document.getElementById('import-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-500 transition-colors">
                         <span class="sr-only">Close</span>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -430,8 +430,8 @@
                 <form action="<?= base_url('admin/import') ?>" method="POST" enctype="multipart/form-data">
                     <?= csrf_field() ?>
                     <div class="mb-5 space-y-3">
-                        <p class="text-sm text-slate-500">Unggah file CSV Anda (Format harus mengikuti template hasil Ekspor CSV).</p>
-                        <input type="file" name="csv_file" accept=".csv" required
+                        <p class="text-sm text-slate-500">Unggah file Excel Anda (Format harus mengikuti template hasil Ekspor Excel).</p>
+                        <input type="file" name="csv_file" accept=".xlsx, .xls" required
                             class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 transition-colors">
                     </div>
                     
