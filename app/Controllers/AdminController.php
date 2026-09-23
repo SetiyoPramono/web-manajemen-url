@@ -23,9 +23,9 @@ class AdminController extends BaseController
         $startDate = $this->request->getGet('start_date');
         $endDate = $this->request->getGet('end_date');
 
-        // Get all URLs with their associated client usernames
+        // Get all URLs with their associated client usernames and review stats
         $query = $urlModel
-            ->select('urls.*, users.username as client_username, users.password_hash')
+            ->select('urls.*, users.username as client_username, users.password_hash, users.nama as client_nama, users.jumlah_ulasan, users.tgl_ulasan')
             ->join('users', 'users.id = urls.user_id', 'left')
             ->orderBy('urls.created_at', 'DESC');
 
@@ -38,12 +38,36 @@ class AdminController extends BaseController
         $urls = $query->paginate($limit);
         $pager = $urlModel->pager;
 
+        // Compute summary statistics for dashboard cards
+        $db = \Config\Database::connect();
+        $statsRow = $db->table('urls')
+            ->select('COUNT(*) as total_urls, COALESCE(SUM(click_count), 0) as total_clicks')
+            ->get()->getRowArray();
+
+        $claimedCount = $db->table('urls')
+            ->join('users', 'users.id = urls.user_id')
+            ->where('users.password_hash !=', 'UNCLAIMED')
+            ->countAllResults();
+
+        $unclaimedCount = $db->table('urls')
+            ->join('users', 'users.id = urls.user_id')
+            ->where('users.password_hash', 'UNCLAIMED')
+            ->countAllResults();
+
+        $stats = [
+            'total_urls'      => (int) ($statsRow['total_urls'] ?? 0),
+            'total_clicks'    => (int) ($statsRow['total_clicks'] ?? 0),
+            'total_claimed'   => $claimedCount,
+            'total_unclaimed' => $unclaimedCount,
+        ];
+
         return view('admin_dashboard', [
             'urls'       => $urls,
             'pager'      => $pager,
             'limit'      => $limit,
             'start_date' => $startDate,
             'end_date'   => $endDate,
+            'stats'      => $stats,
         ]);
     }
 
@@ -184,15 +208,19 @@ class AdminController extends BaseController
 
         // Validation rules
         $rules = [
-            'username'    => "required|min_length[3]|max_length[100]|is_unique[users.username,id,{$client['id']}]",
-            'nama'        => 'permit_empty|max_length[255]',
-            'nomor_wa'    => 'permit_empty|max_length[20]',
-            'alamat_maps' => 'permit_empty|max_length[2048]',
+            'username'      => "required|min_length[3]|max_length[100]|is_unique[users.username,id,{$client['id']}]",
+            'nama'          => 'permit_empty|max_length[255]',
+            'nomor_wa'      => 'permit_empty|max_length[20]',
+            'alamat_maps'   => 'permit_empty|max_length[2048]',
+            'jumlah_ulasan' => 'permit_empty|is_natural',
         ];
 
         $messages = [
             'username' => [
                 'is_unique' => 'Username sudah digunakan oleh user lain.',
+            ],
+            'jumlah_ulasan' => [
+                'is_natural' => 'Jumlah ulasan harus berupa angka bulat positif atau 0.',
             ],
         ];
 
@@ -210,6 +238,21 @@ class AdminController extends BaseController
             'nomor_wa'    => $this->request->getPost('nomor_wa') ?: null,
             'alamat_maps' => $this->request->getPost('alamat_maps') ?: null,
         ];
+
+        // Process review count and update date
+        $rawJumlahUlasan = $this->request->getPost('jumlah_ulasan');
+        if ($rawJumlahUlasan !== null && $rawJumlahUlasan !== '') {
+            $newJumlah = (int) $rawJumlahUlasan;
+            $oldJumlah = isset($client['jumlah_ulasan']) && $client['jumlah_ulasan'] !== null ? (int) $client['jumlah_ulasan'] : null;
+
+            $userData['jumlah_ulasan'] = $newJumlah;
+            if ($oldJumlah === null || $newJumlah !== $oldJumlah || empty($client['tgl_ulasan'])) {
+                $userData['tgl_ulasan'] = date('Y-m-d H:i:s');
+            }
+        } else {
+            $userData['jumlah_ulasan'] = null;
+            $userData['tgl_ulasan']    = null;
+        }
 
         // Update password only if provided
         $newPassword = $this->request->getPost('password');
@@ -452,10 +495,29 @@ class AdminController extends BaseController
     public function settings()
     {
         $settingModel = new \App\Models\SettingModel();
-        
+
+        $rawNumbers = $settingModel->getValue('cs_wa_numbers', '');
+        $csNumbers = [];
+        if (!empty($rawNumbers)) {
+            $csNumbers = json_decode($rawNumbers, true) ?: [];
+        }
+
+        // Backward compatibility if cs_wa_numbers is empty but cs_wa_number exists
+        if (empty($csNumbers)) {
+            $oldNumber = $settingModel->getValue('cs_wa_number', '');
+            if (!empty($oldNumber)) {
+                $csNumbers[] = [
+                    'name'      => 'CS 1',
+                    'number'    => $oldNumber,
+                    'is_active' => 1,
+                ];
+            }
+        }
+
         $settings = [
             'cs_wa_number'  => $settingModel->getValue('cs_wa_number', ''),
             'cs_wa_enabled' => $settingModel->getValue('cs_wa_enabled', '0'),
+            'cs_wa_numbers' => $csNumbers,
         ];
 
         return view('admin_settings', [
@@ -468,27 +530,59 @@ class AdminController extends BaseController
      */
     public function updateSettings()
     {
-        $rules = [
-            'cs_wa_number' => 'required|max_length[20]',
-        ];
-
-        if (! $this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
-        }
-
         $settingModel = new \App\Models\SettingModel();
-        
-        $waNumber = $this->request->getPost('cs_wa_number');
-        // Clean the WA number (remove + or leading 0, replace with 62)
-        $waNumber = preg_replace('/[^0-9]/', '', $waNumber);
-        if (substr($waNumber, 0, 1) === '0') {
-            $waNumber = '62' . substr($waNumber, 1);
+        $isEnabled = $this->request->getPost('cs_wa_enabled') ? '1' : '0';
+        $csInput = $this->request->getPost('cs') ?: [];
+
+        $cleanedList = [];
+        $firstActiveNumber = '';
+
+        if (is_array($csInput)) {
+            foreach ($csInput as $item) {
+                $rawNumber = $item['number'] ?? '';
+                // Clean the WA number (keep digits only)
+                $number = preg_replace('/[^0-9]/', '', $rawNumber);
+                if (empty($number)) {
+                    continue; // Skip empty rows
+                }
+                if (substr($number, 0, 1) === '0') {
+                    $number = '62' . substr($number, 1);
+                }
+
+                $name = trim($item['name'] ?? '');
+                if (empty($name)) {
+                    $name = 'CS ' . (count($cleanedList) + 1);
+                }
+
+                $isActive = (isset($item['is_active']) && (string)$item['is_active'] === '1') ? 1 : 0;
+
+                $cleanedList[] = [
+                    'name'      => $name,
+                    'number'    => $number,
+                    'is_active' => $isActive,
+                ];
+
+                if ($isActive === 1 && empty($firstActiveNumber)) {
+                    $firstActiveNumber = $number;
+                }
+            }
         }
 
-        $settingModel->setValue('cs_wa_number', $waNumber);
-        $settingModel->setValue('cs_wa_enabled', $this->request->getPost('cs_wa_enabled') ? '1' : '0');
+        // Validation: If enabled, require at least one number
+        if ($isEnabled === '1' && empty($cleanedList)) {
+            return redirect()->back()->withInput()->with('error', 'Harap masukkan setidaknya satu nomor WhatsApp CS jika fitur diaktifkan.');
+        }
 
-        return redirect()->to('/admin/settings')->with('success', 'Pengaturan berhasil diperbarui.');
+        // If no active number found but list is not empty, fallback to first number
+        if (empty($firstActiveNumber) && !empty($cleanedList)) {
+            $firstActiveNumber = $cleanedList[0]['number'];
+        }
+
+        $settingModel->setValue('cs_wa_numbers', json_encode($cleanedList));
+        $settingModel->setValue('cs_wa_number', $firstActiveNumber);
+        $settingModel->setValue('cs_wa_enabled', $isEnabled);
+
+        return redirect()->to('/admin/settings')->with('success', 'Pengaturan Customer Support dan Rotator berhasil diperbarui.');
     }
 
     /**
@@ -498,7 +592,7 @@ class AdminController extends BaseController
     {
         $urlModel = new UrlModel();
         
-        $urls = $urlModel->select('urls.slug_url, urls.destination_url, users.username, users.password_hash, users.nama, users.nomor_wa, users.alamat_maps')
+        $urls = $urlModel->select('urls.slug_url, urls.destination_url, users.username, users.password_hash, users.nama, users.nomor_wa, users.alamat_maps, users.jumlah_ulasan, users.tgl_ulasan')
                          ->join('users', 'users.id = urls.user_id')
                          ->orderBy('urls.created_at', 'DESC')
                          ->findAll();
@@ -507,7 +601,7 @@ class AdminController extends BaseController
         $sheet = $spreadsheet->getActiveSheet();
 
         // Write header
-        $headers = ['Slug URL', 'URL Tujuan', 'Username Login', 'Password', 'Nama Bisnis', 'Nomor WhatsApp', 'Alamat Maps (Asli)'];
+        $headers = ['Slug URL', 'URL Tujuan', 'Username Login', 'Password', 'Nama Bisnis', 'Nomor WhatsApp', 'Alamat Maps (Asli)', 'Jumlah Ulasan', 'Tanggal Ulasan Diisi'];
         $col = 'A';
         foreach ($headers as $header) {
             $sheet->setCellValue($col . '1', $header);
@@ -525,6 +619,8 @@ class AdminController extends BaseController
             $sheet->setCellValue('E' . $row, $url['nama']);
             $sheet->setCellValueExplicit('F' . $row, (string)$url['nomor_wa'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $sheet->setCellValue('G' . $row, $url['alamat_maps']);
+            $sheet->setCellValue('H' . $row, $url['jumlah_ulasan'] !== null ? $url['jumlah_ulasan'] : '');
+            $sheet->setCellValue('I' . $row, !empty($url['tgl_ulasan']) ? $url['tgl_ulasan'] : '');
             $row++;
         }
 
@@ -593,6 +689,18 @@ class AdminController extends BaseController
                 $nama        = trim((string)($data[4] ?? ''));
                 $nomorWa     = trim((string)($data[5] ?? ''));
                 $alamatMaps  = trim((string)($data[6] ?? ''));
+                $rawJumlah   = isset($data[7]) && trim((string)$data[7]) !== '' ? (int)trim((string)$data[7]) : null;
+                $rawTgl      = isset($data[8]) && trim((string)$data[8]) !== '' ? trim((string)$data[8]) : null;
+
+                if (empty($slug)) {
+                    continue;
+                }
+
+                // Sanitize slug if it was imported as a full URL (e.g. from an exported file)
+                if (filter_var($slug, FILTER_VALIDATE_URL) || str_contains($slug, '/')) {
+                    $parsedPath = parse_url($slug, PHP_URL_PATH);
+                    $slug = trim(basename(rtrim($parsedPath ?? $slug, '/')), '/');
+                }
 
                 if (empty($slug)) {
                     continue;
@@ -631,6 +739,11 @@ class AdminController extends BaseController
                         'nomor_wa' => $nomorWa,
                         'alamat_maps' => $alamatMaps,
                     ];
+
+                    if ($rawJumlah !== null) {
+                        $userUpdate['jumlah_ulasan'] = $rawJumlah;
+                        $userUpdate['tgl_ulasan']    = !empty($rawTgl) ? date('Y-m-d H:i:s', strtotime($rawTgl)) : date('Y-m-d H:i:s');
+                    }
                     
                     // Only update password if a new one is provided in Excel
                     if (!empty($password) && $password !== 'UNCLAIMED') {
@@ -649,14 +762,21 @@ class AdminController extends BaseController
                         $username = $username . rand(10, 99);
                     }
 
-                    $userId = $userModel->skipValidation(true)->insert([
+                    $insertData = [
                         'username'      => $username,
                         'password_hash' => $passwordHash,
                         'role'          => 'client',
                         'nama'          => $nama,
                         'nomor_wa'      => $nomorWa,
                         'alamat_maps'   => $alamatMaps
-                    ]);
+                    ];
+
+                    if ($rawJumlah !== null) {
+                        $insertData['jumlah_ulasan'] = $rawJumlah;
+                        $insertData['tgl_ulasan']    = !empty($rawTgl) ? date('Y-m-d H:i:s', strtotime($rawTgl)) : date('Y-m-d H:i:s');
+                    }
+
+                    $userId = $userModel->skipValidation(true)->insert($insertData);
 
                     $urlModel->skipValidation(true)->insert([
                         'slug_url'        => $slug,

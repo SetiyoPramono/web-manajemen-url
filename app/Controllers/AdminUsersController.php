@@ -26,15 +26,24 @@ class AdminUsersController extends BaseController
     public function create()
     {
         $rules = [
-            'username' => 'required|min_length[3]|max_length[100]|is_unique[users.username]',
-            'password' => 'required|min_length[4]',
-            'role'     => 'required|in_list[admin,client]',
-            'nama'     => 'permit_empty|max_length[100]',
-            'nomor_wa' => 'permit_empty|max_length[20]',
+            'username'      => 'required|min_length[3]|max_length[100]|is_unique[users.username]',
+            'password'      => 'required|min_length[4]',
+            'role'          => 'required|in_list[admin,client]',
+            'nama'          => 'permit_empty|max_length[100]',
+            'nomor_wa'      => 'permit_empty|max_length[20]',
+            'jumlah_ulasan' => 'permit_empty|is_natural',
         ];
 
         if (! $this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        $rawJumlahUlasan = $this->request->getPost('jumlah_ulasan');
+        $jumlahUlasan = null;
+        $tglUlasan = null;
+        if ($rawJumlahUlasan !== null && $rawJumlahUlasan !== '') {
+            $jumlahUlasan = (int) $rawJumlahUlasan;
+            $tglUlasan = date('Y-m-d H:i:s');
         }
 
         $userModel = new UserModel();
@@ -45,7 +54,9 @@ class AdminUsersController extends BaseController
             'role'          => $this->request->getPost('role'),
             'nama'          => $this->request->getPost('nama'),
             'nomor_wa'      => $this->request->getPost('nomor_wa'),
-            'alamat_maps'   => ''
+            'alamat_maps'   => '',
+            'jumlah_ulasan' => $jumlahUlasan,
+            'tgl_ulasan'    => $tglUlasan,
         ]);
 
         return redirect()->to('/admin/users')->with('success', 'Pengguna berhasil ditambahkan.');
@@ -64,7 +75,7 @@ class AdminUsersController extends BaseController
         }
 
         // Prevent deleting yourself
-        if ($user['id'] === session()->get('user_id')) {
+        if ((int) $user['id'] === (int) session()->get('user_id')) {
             return redirect()->to('/admin/users')->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
         }
 

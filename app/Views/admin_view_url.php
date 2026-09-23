@@ -98,6 +98,18 @@
                         </span>
                     <?php endif; ?>
                 </div>
+                <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-3 border-b border-slate-100">
+                    <span class="text-sm font-medium text-slate-500 sm:w-40 flex-shrink-0">Total Scan</span>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 font-semibold text-sm rounded-lg border border-emerald-200">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <?= number_format($url['click_count'] ?? 0) ?> kali
+                        </span>
+                        <?php if (!empty($url['last_accessed_at'])): ?>
+                            <span class="text-xs text-slate-400">(Terakhir: <?= date('d M Y, H:i', strtotime($url['last_accessed_at'])) ?> WIB)</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
                 <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-3">
                     <span class="text-sm font-medium text-slate-500 sm:w-40 flex-shrink-0">Dibuat</span>
                     <span class="text-sm text-slate-700"><?= date('d F Y, H:i', strtotime($url['created_at'])) ?> WIB</span>
@@ -170,6 +182,28 @@
                                 </svg>
                                 Chat
                             </a>
+                        </div>
+                    <?php else: ?>
+                        <span class="text-sm text-slate-400 italic">Belum diisi</span>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Jumlah Ulasan -->
+                <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-3 border-b border-slate-100">
+                    <span class="text-sm font-medium text-slate-500 sm:w-40 flex-shrink-0">Jumlah Ulasan</span>
+                    <?php if (isset($client['jumlah_ulasan']) && $client['jumlah_ulasan'] !== null): ?>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 font-semibold text-sm rounded-lg border border-amber-200">
+                                <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                                <?= number_format($client['jumlah_ulasan']) ?> Ulasan
+                            </span>
+                            <?php if (!empty($client['tgl_ulasan'])): ?>
+                                <span class="text-xs text-slate-500">
+                                    (Diisi pada: <?= date('d M Y, H:i', strtotime($client['tgl_ulasan'])) ?> WIB)
+                                </span>
+                            <?php endif; ?>
                         </div>
                     <?php else: ?>
                         <span class="text-sm text-slate-400 italic">Belum diisi</span>

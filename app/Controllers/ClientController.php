@@ -11,13 +11,59 @@ class ClientController extends BaseController
      */
     public function index()
     {
-        $userId   = session()->get('user_id');
-        $urlModel = new UrlModel();
-        $urls     = $urlModel->getUrlsByUser($userId);
+        $userId    = session()->get('user_id');
+        $urlModel  = new UrlModel();
+        $userModel = new \App\Models\UserModel();
+
+        $urls   = $urlModel->getUrlsByUser($userId);
+        $client = $userModel->find($userId);
 
         return view('client_dashboard', [
-            'urls' => $urls,
+            'urls'   => $urls,
+            'client' => $client,
         ]);
+    }
+
+    /**
+     * Update client's review count
+     */
+    public function updateReviewCount()
+    {
+        $userId    = session()->get('user_id');
+        $userModel = new \App\Models\UserModel();
+        $client    = $userModel->find($userId);
+
+        if (! $client) {
+            return redirect()->to('/client')->with('error', 'Data pengguna tidak ditemukan.');
+        }
+
+        $rules = [
+            'jumlah_ulasan' => 'permit_empty|is_natural',
+        ];
+
+        if (! $this->validate($rules)) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        $rawJumlahUlasan = $this->request->getPost('jumlah_ulasan');
+        if ($rawJumlahUlasan !== null && $rawJumlahUlasan !== '') {
+            $newJumlah = (int) $rawJumlahUlasan;
+            $oldJumlah = isset($client['jumlah_ulasan']) && $client['jumlah_ulasan'] !== null ? (int) $client['jumlah_ulasan'] : null;
+
+            $updateData = ['jumlah_ulasan' => $newJumlah];
+            if ($oldJumlah === null || $newJumlah !== $oldJumlah || empty($client['tgl_ulasan'])) {
+                $updateData['tgl_ulasan'] = date('Y-m-d H:i:s');
+            }
+        } else {
+            $updateData = [
+                'jumlah_ulasan' => null,
+                'tgl_ulasan'    => null,
+            ];
+        }
+
+        $userModel->skipValidation(true)->update($userId, $updateData);
+
+        return redirect()->to('/client')->with('success', 'Jumlah ulasan berhasil diperbarui!');
     }
 
     /**

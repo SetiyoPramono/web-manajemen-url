@@ -2,8 +2,23 @@
 $settingModel = new \App\Models\SettingModel();
 $isEnabled = $settingModel->getValue('cs_wa_enabled', '0');
 $waNumber = $settingModel->getValue('cs_wa_number', '');
+$rawNumbers = $settingModel->getValue('cs_wa_numbers', '');
+$hasAnyNumber = !empty($waNumber) || !empty($rawNumbers);
 
-if ($isEnabled == '1' && !empty($waNumber)):
+$defaultCsName = '';
+if (!empty($rawNumbers)) {
+    $decoded = json_decode($rawNumbers, true);
+    if (!empty($decoded) && is_array($decoded)) {
+        foreach ($decoded as $item) {
+            if (!empty($item['number']) && (!isset($item['is_active']) || (int)$item['is_active'] === 1)) {
+                $defaultCsName = $item['name'] ?? '';
+                break;
+            }
+        }
+    }
+}
+
+if ($isEnabled == '1' && $hasAnyNumber):
 ?>
     <!-- CS Floating Button -->
     <div class="fixed bottom-6 right-6 z-[100] font-sans">
@@ -74,26 +89,70 @@ if ($isEnabled == '1' && !empty($waNumber)):
                 }
             });
 
-            // Handle send button
-            sendBtn.addEventListener('click', function() {
+            // Handle send button with Rotator API & Customized Greeting
+            sendBtn.addEventListener('click', async function() {
                 const name = document.getElementById('wa-name').value.trim();
                 const message = document.getElementById('wa-message').value.trim();
-                const targetNumber = '<?= esc($waNumber) ?>';
+                let targetNumber = '<?= esc($waNumber) ?>';
+                let targetCsName = '<?= esc($defaultCsName, "js") ?>';
                 
                 if (!name || !message) {
                     alert('Harap isi nama dan pesan Anda.');
                     return;
                 }
 
-                const text = `Halo Admin, saya *${name}*.\n\n${message}`;
+                // Loading state on button
+                const originalHtml = sendBtn.innerHTML;
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = `
+                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Menghubungkan CS...
+                `;
+
+                // Call CS Rotator API
+                try {
+                    const res = await fetch('<?= base_url('api/cs-rotate') ?>');
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.status === 'success' && data.number) {
+                            targetNumber = data.number;
+                            if (data.name) {
+                                targetCsName = data.name.trim();
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Rotator request failed, using default number:', err);
+                }
+
+                // Format greeting based on CS name (e.g., if CS is "Rini" or "CS Rini" -> "Admin Rini")
+                let greetingTarget = 'Admin';
+                if (targetCsName) {
+                    // Bersihkan prefix seperti "CS " atau "Admin " jika pengguna sudah mengetiknya
+                    let cleanName = targetCsName.replace(/^(cs[\s\-_]+|admin[\s\-_]+)/i, '').trim();
+                    if (cleanName) {
+                        greetingTarget = `Admin ${cleanName}`;
+                    } else {
+                        greetingTarget = targetCsName;
+                    }
+                }
+
+                const text = `Halo ${greetingTarget}, saya *${name}*.\n\n${message}`;
                 const encodedText = encodeURIComponent(text);
                 const waUrl = `https://wa.me/${targetNumber}?text=${encodedText}`;
                 
                 window.open(waUrl, '_blank');
                 
-                // Hide form after sending
-                waForm.classList.remove('scale-100', 'opacity-100');
-                waForm.classList.add('scale-0', 'opacity-0');
+                // Reset button & hide form
+                setTimeout(() => {
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = originalHtml;
+                    waForm.classList.remove('scale-100', 'opacity-100');
+                    waForm.classList.add('scale-0', 'opacity-0');
+                }, 300);
             });
         });
     </script>

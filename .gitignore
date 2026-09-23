@@ -125,3 +125,5 @@ _modules/*
 /results/
 /phpunit.xml
 public/null/
+scratch/
+*.zip

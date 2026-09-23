@@ -40,10 +40,13 @@ class RedirectController extends BaseController
             return redirect()->to('/login')->with('warning', 'URL tujuan belum diatur. Silakan login untuk mengatur URL tujuan.');
         }
 
+        // Increment click/scan counter
+        $urlModel->incrementClick((int) $url['id']);
+
         // Slug found and destination_url exists -> render rating page
         return view('rating_page', [
             'destination_url' => $url['destination_url'],
-            'nomor_wa'      => $user['nomor_wa'] ?? ''
+            'nomor_wa'        => $user['nomor_wa'] ?? ''
         ]);
     }
 }

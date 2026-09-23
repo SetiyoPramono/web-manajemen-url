@@ -11,7 +11,7 @@ class UrlModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
-    protected $allowedFields    = ['slug_url', 'destination_url', 'user_id'];
+    protected $allowedFields    = ['slug_url', 'destination_url', 'user_id', 'click_count', 'last_accessed_at'];
     protected $useTimestamps    = true;
     protected $createdField     = 'created_at';
     protected $updatedField     = 'updated_at';
@@ -42,5 +42,17 @@ class UrlModel extends Model
     public function findBySlug(string $slug): ?array
     {
         return $this->where('slug_url', $slug)->first();
+    }
+
+    /**
+     * Atomically increment the click count of a URL and update last_accessed_at
+     */
+    public function incrementClick(int $id): bool
+    {
+        return (bool) $this->builder()
+            ->where('id', $id)
+            ->set('click_count', 'click_count + 1', false)
+            ->set('last_accessed_at', date('Y-m-d H:i:s'))
+            ->update();
     }
 }

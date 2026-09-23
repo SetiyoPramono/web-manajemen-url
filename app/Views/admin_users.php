@@ -51,6 +51,12 @@
                         </svg>
                         <span class="hidden sm:inline">Beranda</span>
                     </a>
+                    <a href="<?= base_url('admin/blocked-ips') ?>" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 border border-transparent rounded-xl transition-all duration-200">
+                        <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span class="hidden sm:inline">IP Diblokir</span>
+                    </a>
                     <a href="<?= base_url('logout') ?>" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-red-500 hover:text-white bg-red-50 hover:bg-red-500 border border-red-200 hover:border-red-500 rounded-xl transition-all duration-200">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -77,6 +83,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
                     Beranda
+                </a>
+                <a href="<?= base_url('admin/blocked-ips') ?>" class="flex items-center gap-2 px-3 py-2 text-base font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-50 rounded-md transition-colors">
+                    <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    IP Diblokir
                 </a>
                 <a href="<?= base_url('logout') ?>" class="flex items-center gap-2 px-3 py-2 text-base font-medium text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors mt-2 border-t border-slate-100 pt-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,7 +158,11 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">No WhatsApp</label>
-                        <input type="text" name="nomor_wa" class="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                        <input type="text" name="nomor_wa" placeholder="08xxxxxxxxxx" class="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Jumlah Ulasan Google (Opsional)</label>
+                        <input type="number" name="jumlah_ulasan" min="0" placeholder="Contoh: 15" class="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
                     </div>
                     <div class="flex items-end">
                         <button type="submit" class="w-full px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-xl shadow-sm transition-colors">
@@ -166,6 +182,7 @@
                             <th class="px-6 py-4 font-semibold whitespace-nowrap">Pengguna</th>
                             <th class="px-6 py-4 font-semibold whitespace-nowrap">Peran</th>
                             <th class="px-6 py-4 font-semibold whitespace-nowrap">Nama Bisnis</th>
+                            <th class="px-6 py-4 font-semibold whitespace-nowrap">Ulasan Google</th>
                             <th class="px-6 py-4 font-semibold whitespace-nowrap text-right">Aksi</th>
                         </tr>
                     </thead>
@@ -193,6 +210,21 @@
                                         <span class="text-slate-400 italic">-</span>
                                     <?php endif; ?>
                                 </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <?php if (isset($user['jumlah_ulasan']) && $user['jumlah_ulasan'] !== null): ?>
+                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 text-xs font-semibold rounded-lg border border-amber-200">
+                                            <svg class="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                            <?= number_format($user['jumlah_ulasan']) ?> Ulasan
+                                        </div>
+                                        <?php if (!empty($user['tgl_ulasan'])): ?>
+                                            <div class="text-[11px] text-slate-400 mt-0.5" title="<?= esc($user['tgl_ulasan']) ?>">
+                                                <?= date('d M Y, H:i', strtotime($user['tgl_ulasan'])) ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="text-slate-400 text-xs italic">-</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="px-6 py-4 text-right">
                                     <?php if ($user['id'] !== session()->get('user_id')): ?>
                                         <form action="<?= base_url('admin/users/delete/' . esc($user['id'])) ?>" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pengguna ini secara permanen? Semua URL yang terikat juga akan dihapus.');" class="inline-block">
@@ -210,7 +242,7 @@
                         
                         <?php if (empty($users)): ?>
                             <tr>
-                                <td colspan="4" class="px-6 py-12 text-center text-slate-500">
+                                <td colspan="5" class="px-6 py-12 text-center text-slate-500">
                                     Tidak ada pengguna lain.
                                 </td>
                             </tr>

@@ -106,13 +106,38 @@
                             placeholder="08123456789">
                     </div>
 
+                    <!-- Jumlah Ulasan Saat Ini -->
+                    <div class="space-y-1.5 md:col-span-2">
+                        <label for="jumlah_ulasan" class="block text-sm font-semibold text-slate-700">
+                            Jumlah Ulasan Google Saat Ini <span class="text-xs font-normal text-slate-400">(Opsional)</span>
+                        </label>
+                        <input type="number" name="jumlah_ulasan" id="jumlah_ulasan" min="0" value="<?= old('jumlah_ulasan') ?>"
+                            class="input-focus block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:bg-white focus:border-indigo-400 focus:outline-none transition-all sm:text-sm"
+                            placeholder="Contoh: 15 (isi jumlah review saat ini untuk memantau pertambahan ulasan)">
+                        <p class="text-xs text-slate-400">Masukkan total review Google Maps Anda sekarang untuk melacak perkembangan ulasan dari waktu ke waktu.</p>
+                    </div>
+
                     <!-- Maps URL -->
                     <div class="space-y-1.5 md:col-span-2">
                         <label for="alamat_maps" class="block text-sm font-semibold text-slate-700">URL Tujuan Google Maps</label>
                         <input type="url" name="alamat_maps" id="alamat_maps" value="<?= old('alamat_maps') ?>" required
                             class="input-focus block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:bg-white focus:border-indigo-400 focus:outline-none transition-all sm:text-sm"
                             placeholder="https://maps.app.goo.gl/...">
-                        <p class="text-xs text-slate-400 mt-1">Kartu ini akan otomatis diarahkan ke URL yang Anda masukkan di atas.</p>
+                        
+                        <!-- Visual Guide Box -->
+                        <div class="mt-2.5 p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs text-slate-600">
+                            <div class="font-semibold text-slate-700 flex items-center gap-1.5 mb-1.5">
+                                <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Cara Mendapatkan Link Google Maps Bisnis Anda:</span>
+                            </div>
+                            <ol class="list-decimal list-inside space-y-1 text-slate-500 pl-0.5 leading-relaxed">
+                                <li>Buka aplikasi <strong>Google Maps</strong> di HP atau cari nama bisnis Anda.</li>
+                                <li>Pilih profil bisnis Anda, lalu klik tombol <strong>Bagikan (Share)</strong>.</li>
+                                <li>Pilih <strong>Salin Link (Copy link)</strong> dan tempelkan pada kolom di atas.</li>
+                            </ol>
+                        </div>
                     </div>
                 </div>
 

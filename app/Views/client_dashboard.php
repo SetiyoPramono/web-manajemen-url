@@ -123,6 +123,113 @@
             </div>
         <?php endif; ?>
 
+        <!-- Client Profile & Review Stats Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5 sm:p-6 mb-8 animate-fade-in">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-sm shadow-indigo-200">
+                        <?= esc(strtoupper(substr($client['nama'] ?? $client['username'] ?? 'C', 0, 1))) ?>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-base sm:text-lg font-bold text-slate-800"><?= esc($client['nama'] ?? $client['username'] ?? 'Klien') ?></h2>
+                            <span class="inline-flex px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-100">Klien Aktif</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">
+                            Username: <span class="font-mono text-slate-600 font-medium"><?= esc($client['username'] ?? '-') ?></span>
+                            <?php if (!empty($client['nomor_wa'])): ?>
+                                &bull; WA: <span class="text-slate-600"><?= esc($client['nomor_wa']) ?></span>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Review Update Trigger -->
+                <button type="button" onclick="document.getElementById('reviewModal').classList.remove('hidden')" class="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs sm:text-sm font-semibold rounded-xl border border-amber-200 transition-colors">
+                    <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    <span><?= isset($client['jumlah_ulasan']) && $client['jumlah_ulasan'] !== null ? 'Perbarui Jumlah Ulasan' : 'Isi Jumlah Ulasan' ?></span>
+                </button>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-5">
+                <!-- Total Scan -->
+                <div class="bg-slate-50/70 rounded-xl p-4 border border-slate-100 flex items-center gap-3.5">
+                    <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400 font-medium">Total Scan Kartu / QR</div>
+                        <?php 
+                            $totalScans = 0;
+                            if (!empty($urls)) {
+                                foreach ($urls as $u) {
+                                    $totalScans += (int)($u['click_count'] ?? 0);
+                                }
+                            }
+                        ?>
+                        <div class="text-lg font-bold text-slate-800 mt-0.5"><?= number_format($totalScans) ?> <span class="text-xs font-normal text-slate-500">kali dipindai</span></div>
+                    </div>
+                </div>
+
+                <!-- Review Count Stat -->
+                <div class="bg-amber-50/50 rounded-xl p-4 border border-amber-100/80 flex items-center gap-3.5">
+                    <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-xs text-amber-700 font-medium">Jumlah Ulasan Google Bisnis</div>
+                        <?php if (isset($client['jumlah_ulasan']) && $client['jumlah_ulasan'] !== null): ?>
+                            <div class="text-lg font-bold text-slate-800 mt-0.5">
+                                <?= number_format($client['jumlah_ulasan']) ?> <span class="text-xs font-normal text-slate-500">Ulasan</span>
+                            </div>
+                            <?php if (!empty($client['tgl_ulasan'])): ?>
+                                <div class="text-[11px] text-slate-500 mt-0.5">
+                                    Diisi pada: <span class="font-medium text-slate-700"><?= date('d M Y, H:i', strtotime($client['tgl_ulasan'])) ?> WIB</span>
+                                </div>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <div class="text-sm font-semibold text-slate-400 mt-0.5">Belum diisi</div>
+                            <div class="text-[11px] text-slate-400">Klik tombol di atas untuk mencatat ulasan</div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Review Count Update Modal -->
+        <div id="reviewModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm hidden animate-fade-in">
+            <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-slide-up">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-800">Perbarui Jumlah Ulasan</h3>
+                    </div>
+                    <button type="button" onclick="document.getElementById('reviewModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <form action="<?= base_url('client/update-review') ?>" method="POST" class="mt-4 space-y-4">
+                    <?= csrf_field() ?>
+                    <div>
+                        <label for="modal_jumlah_ulasan" class="block text-sm font-semibold text-slate-700 mb-1.5">Jumlah Ulasan Google Saat Ini</label>
+                        <input type="number" name="jumlah_ulasan" id="modal_jumlah_ulasan" min="0" value="<?= esc($client['jumlah_ulasan'] ?? '') ?>" placeholder="Contoh: 35" class="input-focus block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:bg-white focus:border-indigo-400 focus:outline-none text-sm" required>
+                        <p class="text-xs text-slate-400 mt-1">Tanggal &amp; waktu pengisian akan otomatis tercatat ke waktu saat ini.</p>
+                    </div>
+                    <div class="flex items-center justify-end gap-2 pt-2">
+                        <button type="button" onclick="document.getElementById('reviewModal').classList.add('hidden')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">Batal</button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors">Simpan Ulasan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Page Header -->
         <div class="mb-6 animate-fade-in">
             <h2 class="text-xl font-bold text-slate-800">URL Anda</h2>
@@ -161,18 +268,24 @@
                                     </div>
                                 </div>
 
-                                <!-- Status Badge -->
-                                <?php if (!empty($url['destination_url'])): ?>
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-lg">
-                                        <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
-                                        Aktif
+                                <!-- Status & Scan Badges -->
+                                <div class="flex items-center gap-2">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-lg border border-indigo-100/80" title="Total pelanggan yang memindai kartu atau QR ini">
+                                        <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <?= number_format($url['click_count'] ?? 0) ?> Scan
                                     </span>
-                                <?php else: ?>
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-600 text-xs font-medium rounded-lg">
-                                        <span class="w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
-                                        Belum diatur
-                                    </span>
-                                <?php endif; ?>
+                                    <?php if (!empty($url['destination_url'])): ?>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-lg">
+                                            <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
+                                            Aktif
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-600 text-xs font-medium rounded-lg">
+                                            <span class="w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
+                                            Belum diatur
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
                             </div>
 
                             <!-- Card Body -->

@@ -65,6 +65,8 @@ class ToolsController extends BaseController
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_HEADER, true);
         curl_setopt($ch, CURLOPT_NOBODY, true); // We just need headers, not body
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3); // 3 seconds connect timeout
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);        // 5 seconds max transfer timeout
         // Sometimes Google requires a valid user agent
         curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
         curl_exec($ch);
@@ -103,5 +105,68 @@ class ToolsController extends BaseController
         
         // Remove padding '='
         return rtrim($urlSafe, '=');
+    }
+
+    /**
+     * Get the next active CS WhatsApp number in round-robin order
+     */
+    public function rotateCs()
+    {
+        $settingModel = new \App\Models\SettingModel();
+
+        $isEnabled = $settingModel->getValue('cs_wa_enabled', '0');
+        if ($isEnabled !== '1') {
+            return $this->response->setJSON([
+                'status'  => 'disabled',
+                'message' => 'Customer Support saat ini dinonaktifkan.',
+            ]);
+        }
+
+        $rawNumbers = $settingModel->getValue('cs_wa_numbers', '');
+        $allNumbers = [];
+        if (!empty($rawNumbers)) {
+            $allNumbers = json_decode($rawNumbers, true) ?: [];
+        }
+
+        // Filter only active numbers with a valid number
+        $activeNumbers = array_values(array_filter($allNumbers, function ($item) {
+            return !empty($item['number']) && (!isset($item['is_active']) || (int)$item['is_active'] === 1);
+        }));
+
+        // Fallback to legacy cs_wa_number if no active items found in cs_wa_numbers
+        if (empty($activeNumbers)) {
+            $fallbackNumber = $settingModel->getValue('cs_wa_number', '');
+            if (!empty($fallbackNumber)) {
+                $activeNumbers[] = [
+                    'name'      => 'Customer Support',
+                    'number'    => $fallbackNumber,
+                    'is_active' => 1,
+                ];
+            }
+        }
+
+        if (empty($activeNumbers)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Tidak ada nomor Customer Support yang aktif saat ini.',
+            ]);
+        }
+
+        // Get current rotation index
+        $currentIndex = (int) $settingModel->getValue('cs_wa_current_index', 0);
+        $totalActive = count($activeNumbers);
+
+        // Pick current CS
+        $selectedCs = $activeNumbers[$currentIndex % $totalActive];
+
+        // Increment rotation index for next call
+        $nextIndex = ($currentIndex + 1) % $totalActive;
+        $settingModel->setValue('cs_wa_current_index', (string) $nextIndex);
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'name'   => $selectedCs['name'],
+            'number' => $selectedCs['number'],
+        ]);
     }
 }
