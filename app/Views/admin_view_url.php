@@ -46,20 +46,6 @@
                         <p class="text-xs text-slate-400 -mt-0.5">/<?= esc($url['slug_url']) ?></p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <a href="<?= base_url('admin/edit/' . $url['id']) ?>" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-indigo-500 hover:text-white bg-indigo-50 hover:bg-indigo-500 border border-indigo-200 hover:border-indigo-500 rounded-xl transition-all duration-200">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        <span class="hidden sm:inline">Edit</span>
-                    </a>
-                    <a href="<?= base_url('admin') ?>" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all duration-200">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-                        </svg>
-                        <span class="hidden sm:inline">Kembali</span>
-                    </a>
-                </div>
             </div>
         </div>
     </nav>

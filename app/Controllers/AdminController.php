@@ -18,15 +18,32 @@ class AdminController extends BaseController
         $urlModel  = new UrlModel();
         $userModel = new UserModel();
 
+        // Get filter inputs
+        $limit = $this->request->getGet('limit') ?? 25;
+        $startDate = $this->request->getGet('start_date');
+        $endDate = $this->request->getGet('end_date');
+
         // Get all URLs with their associated client usernames
-        $urls = $urlModel
+        $query = $urlModel
             ->select('urls.*, users.username as client_username, users.password_hash')
             ->join('users', 'users.id = urls.user_id', 'left')
-            ->orderBy('urls.created_at', 'DESC')
-            ->findAll();
+            ->orderBy('urls.created_at', 'DESC');
+
+        if (!empty($startDate) && !empty($endDate)) {
+            // Include entire end date day
+            $query->where('DATE(urls.created_at) >=', $startDate)
+                  ->where('DATE(urls.created_at) <=', $endDate);
+        }
+
+        $urls = $query->paginate($limit);
+        $pager = $urlModel->pager;
 
         return view('admin_dashboard', [
-            'urls' => $urls,
+            'urls'       => $urls,
+            'pager'      => $pager,
+            'limit'      => $limit,
+            'start_date' => $startDate,
+            'end_date'   => $endDate,
         ]);
     }
 
@@ -36,7 +53,7 @@ class AdminController extends BaseController
     public function createUrl()
     {
         $rules = [
-            'slug_url' => 'required|alpha_dash|min_length[2]|max_length[100]|is_unique[urls.slug_url]',
+            'slug_url' => 'permit_empty|alpha_dash|min_length[2]|max_length[100]|is_unique[urls.slug_url]',
         ];
 
         $messages = [
@@ -50,42 +67,80 @@ class AdminController extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        $slugUrl = $this->request->getPost('slug_url');
-
-        // Generate unclaimed client credentials
-        // Use slug_url as the temporary username (guaranteed unique by urls.slug_url constraint)
-        $clientUsername = $slugUrl;
-        $hashedPassword = 'UNCLAIMED';
-
+        $qty = (int) $this->request->getPost('qty');
+        if ($qty < 1) $qty = 1;
+        
+        $userModel = new UserModel();
+        $urlModel = new UrlModel();
+        
         $db = \Config\Database::connect();
         $db->transStart();
 
-        $userModel = new UserModel();
+        if ($qty > 1) {
+            for ($i = 0; $i < $qty; $i++) {
+                do {
+                    $randomSlug = bin2hex(random_bytes(3));
+                    $exists = $urlModel->where('slug_url', $randomSlug)->first();
+                } while ($exists);
+                
+                $userModel->skipValidation(true)->insert([
+                    'username'      => $randomSlug,
+                    'password_hash' => 'UNCLAIMED',
+                    'role'          => 'client',
+                ]);
+                
+                $newUserId = $userModel->getInsertID();
+                
+                $urlModel->skipValidation(true)->insert([
+                    'slug_url'        => $randomSlug,
+                    'destination_url' => null,
+                    'user_id'         => $newUserId,
+                ]);
+            }
+            
+            $db->transComplete();
 
-        // Create the unclaimed client user
-        $userModel->skipValidation(true)->insert([
-            'username'      => $clientUsername,
-            'password_hash' => $hashedPassword,
-            'role'          => 'client',
-        ]);
+            if ($db->transStatus() === false) {
+                return redirect()->to('/admin')->with('error', 'Gagal membuat URL massal.');
+            }
 
-        $newUserId = $userModel->getInsertID();
+            return redirect()->to('/admin')->with('success', "Berhasil! {$qty} URL acak telah dibuat.");
+        } else {
+            $slugUrl = $this->request->getPost('slug_url');
 
-        // Create the URL entry
-        $urlModel = new UrlModel();
-        $urlModel->skipValidation(true)->insert([
-            'slug_url'        => $slugUrl,
-            'destination_url' => null,
-            'user_id'         => $newUserId,
-        ]);
+            // Generate automatic slug if empty
+            if (empty($slugUrl)) {
+                do {
+                    $slugUrl = bin2hex(random_bytes(3)); // 6 characters
+                    $exists = $urlModel->where('slug_url', $slugUrl)->first();
+                } while ($exists);
+            }
 
-        $db->transComplete();
+            $clientUsername = $slugUrl;
+            $hashedPassword = 'UNCLAIMED';
 
-        if ($db->transStatus() === false) {
-            return redirect()->to('/admin')->with('error', 'Gagal membuat URL baru.');
+            $userModel->skipValidation(true)->insert([
+                'username'      => $clientUsername,
+                'password_hash' => $hashedPassword,
+                'role'          => 'client',
+            ]);
+
+            $newUserId = $userModel->getInsertID();
+
+            $urlModel->skipValidation(true)->insert([
+                'slug_url'        => $slugUrl,
+                'destination_url' => null,
+                'user_id'         => $newUserId,
+            ]);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return redirect()->to('/admin')->with('error', 'Gagal membuat URL baru.');
+            }
+
+            return redirect()->to('/admin')->with('success', "Berhasil! URL /{$slugUrl} telah dibuat dan siap diklaim oleh klien.");
         }
-
-        return redirect()->to('/admin')->with('success', "Berhasil! URL /{$slugUrl} telah dibuat dan siap diklaim oleh klien.");
     }
 
     /**
@@ -273,6 +328,111 @@ class AdminController extends BaseController
     }
 
     /**
+     * Process bulk actions (delete, reset, export)
+     */
+    public function bulkAction()
+    {
+        $action = $this->request->getPost('action');
+        $ids = $this->request->getPost('ids');
+
+        if (empty($ids) || !is_array($ids)) {
+            return redirect()->to('/admin')->with('error', 'Tidak ada data yang dipilih.');
+        }
+
+        $urlModel = new UrlModel();
+        $userModel = new UserModel();
+
+        if ($action === 'delete') {
+            $db = \Config\Database::connect();
+            $db->transStart();
+            
+            foreach ($ids as $id) {
+                $url = $urlModel->find($id);
+                if ($url) {
+                    $urlModel->delete($id);
+                    $userModel->delete($url['user_id']);
+                }
+            }
+            
+            $db->transComplete();
+            
+            if ($db->transStatus() === false) {
+                return redirect()->to('/admin')->with('error', 'Gagal menghapus data secara massal.');
+            }
+            return redirect()->to('/admin')->with('success', count($ids) . ' data berhasil dihapus.');
+            
+        } elseif ($action === 'reset') {
+            $db = \Config\Database::connect();
+            $db->transStart();
+            
+            foreach ($ids as $id) {
+                $url = $urlModel->find($id);
+                if ($url) {
+                    $user = $userModel->find($url['user_id']);
+                    if ($user) {
+                        $urlModel->update($id, ['destination_url' => '']);
+                        $userModel->skipValidation(true)->update($user['id'], [
+                            'username'      => $url['slug_url'],
+                            'password_hash' => 'UNCLAIMED',
+                            'nama'          => '',
+                            'nomor_wa'      => '',
+                            'alamat_maps'   => ''
+                        ]);
+                    }
+                }
+            }
+            
+            $db->transComplete();
+            
+            if ($db->transStatus() === false) {
+                return redirect()->to('/admin')->with('error', 'Gagal mereset data secara massal.');
+            }
+            return redirect()->to('/admin')->with('success', count($ids) . ' data berhasil direset.');
+            
+        } elseif ($action === 'export') {
+            $urls = $urlModel->select('urls.slug_url, urls.destination_url, users.username, users.password_hash, users.nama, users.nomor_wa, users.alamat_maps')
+                             ->join('users', 'users.id = urls.user_id')
+                             ->whereIn('urls.id', $ids)
+                             ->orderBy('urls.created_at', 'DESC')
+                             ->findAll();
+
+            $spreadsheet = new Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+
+            $headers = ['Slug URL', 'URL Tujuan', 'Username Login', 'Password', 'Nama Bisnis', 'Nomor WhatsApp', 'Alamat Maps (Asli)'];
+            $col = 'A';
+            foreach ($headers as $header) {
+                $sheet->setCellValue($col . '1', $header);
+                $col++;
+            }
+
+            $row = 2;
+            foreach ($urls as $url) {
+                $password = ($url['password_hash'] === 'UNCLAIMED') ? 'UNCLAIMED' : '';
+                $sheet->setCellValue('A' . $row, base_url($url['slug_url']));
+                $sheet->setCellValue('B' . $row, $url['destination_url']);
+                $sheet->setCellValue('C' . $row, $url['username']);
+                $sheet->setCellValue('D' . $row, $password);
+                $sheet->setCellValue('E' . $row, $url['nama']);
+                $sheet->setCellValueExplicit('F' . $row, (string)$url['nomor_wa'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                $sheet->setCellValue('G' . $row, $url['alamat_maps']);
+                $row++;
+            }
+
+            $filename = 'export_terpilih_' . date('Y-m-d_H-i-s') . '.xlsx';
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
+
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+            exit;
+        }
+
+        return redirect()->to('/admin');
+    }
+
+    /**
      * Generate a random password
      */
     private function generateRandomPassword(int $length = 8): string
@@ -358,7 +518,7 @@ class AdminController extends BaseController
         $row = 2;
         foreach ($urls as $url) {
             $password = ($url['password_hash'] === 'UNCLAIMED') ? 'UNCLAIMED' : ''; // Do not export hashed passwords
-            $sheet->setCellValue('A' . $row, $url['slug_url']);
+            $sheet->setCellValue('A' . $row, base_url($url['slug_url']));
             $sheet->setCellValue('B' . $row, $url['destination_url']);
             $sheet->setCellValue('C' . $row, $url['username']);
             $sheet->setCellValue('D' . $row, $password);
